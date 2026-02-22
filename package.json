@@ -77,6 +77,13 @@
   },
   "license": "LGPL-2.1",
   "main": "./lib/p5.min.js",
+  "exports": {
+    ".": {
+      "import": "./src/app.js",
+      "require": "./lib/p5.min.js",
+      "default": "./lib/p5.min.js"
+    }
+  },
   "files": [
     "license.txt",
     "lib/p5.min.js",
