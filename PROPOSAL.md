@@ -467,7 +467,9 @@ i have researched each of these thoroughly and have a clear position on each one
 when a slice has `d < 1.0` (transparent), correct rendering requires back-to-front draw order. i have thought through three options:
 
 option a: sort transparent slices at load time based on estimated depth from the geometry bounds.
+
 option b: document that artists should order transparent faces last in their obj export, which is what most 3d tools already do by convention.
+
 option c: expose a `loadModel('file.obj', { sortTransparent: true })` option for users who need it.
 
 my current position is option b for v1, because it adds zero complexity, it matches what artists already do in blender and maya, and option c can follow as a documented enhancement. i want to confirm with diya and claudine that this matches how the team thinks about v1 scope before committing.
