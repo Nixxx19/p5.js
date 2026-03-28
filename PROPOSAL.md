@@ -178,8 +178,8 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 ```
 current:  Kd, Ka, Ks, map_Kd (stored but unused)
 proposed: Kd, Ka, Ks, Ns, d, illum + map_Kd, map_Ka, map_Ks, map_Bump, map_Ns
-          all map_* values trigger loadImage() during preload so textures are
-          ready synchronously when model() is called in draw()
+          all map_* values trigger loadImage() inside loadModel(), awaited in
+          async setup(), so all textures are resolved before draw() starts
 ```
 
 **parseObj() the slicer:**
@@ -200,6 +200,8 @@ on end-of-file:
 ```
 
 the vertex-deduplication logic (`usedVerts` map, keyed by `vertexString + material`) already exists in the current code. the slicer reuses this: each slice has its own `usedVerts` scope so face indices are local to the slice.
+
+uv re-indexing: obj uv coordinates (`vt`) are stored in a single global list and face tokens reference into it with global indices (e.g. `f 1/3/1 2/5/2` means vertex 1 with uv 3). when slicing by `usemtl` boundary, each slice has its own local vertex array starting at index 0. the slicer remaps every global `vt` reference to a per-slice local index as it copies vertices into each slice's array. this is the same index-localisation step already performed for vertex positions and normals, applied equally to uvs.
 
 draw order: slices are inserted in obj file order, which matches the artist's 3d software export order. no automatic depth sorting for opaque meshes since the depth buffer handles occlusion correctly for opaque geometry automatically.
 
@@ -288,13 +290,13 @@ since this touches the behaviour of an existing api, i will prioritise confirmin
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
-eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`, which already runs in `preload()`. this means textures are guaranteed ready before `draw()` starts. no complexity. this is how users would expect it to work.
+eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` — the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. textures are guaranteed ready before the first frame. no complexity.
 
 lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
 
 i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
 
-the async coordination works as follows: `loadModel()` is already an `async` function. during parsing, every `map_*` path found by `parseMtl()` triggers a `loadImage()` call and the returned promise is pushed into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before the first `draw()` frame — no per-frame flicker, no partial renders. the mechanism is identical to how p5.js already handles multiple `loadImage()` calls inside `preload()`, the runtime waits for all pending async operations before starting the draw loop.
+the async coordination works as follows: `loadModel()` is already an `async` function. during parsing, every `map_*` path found by `parseMtl()` triggers a `loadImage()` call and the returned promise is pushed into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame — no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
 ### 5.6 error handling
 
@@ -537,7 +539,7 @@ i prefer always-on. the overhead is o(1) per draw call since it is just comparin
 
 **decision 3: texture loading, eager vs lazy**
 
-i prefer eager loading. all `map_*` textures get loaded inside `loadModel()` which already runs in `preload()`, so everything is ready before `draw()` starts. this is the simplest mental model for users and it is consistent with how p5.js handles image loading everywhere else.
+i prefer eager loading. all `map_*` textures get loaded inside `loadModel()`, which the user awaits in `async setup()`. since dev-2.0 awaits `setup()` before starting the draw loop, everything is ready before `draw()` starts. this is the simplest mental model and consistent with how dev-2.0 handles all async asset loading.
 
 lazy loading (loading on first render) would reduce startup time for models with many materials but adds state tracking, potential one-frame flicker, and more error-handling surface area. i think that tradeoff is not worth it for a first implementation. lazy loading can be a follow-up once the eager path is stable.
 
