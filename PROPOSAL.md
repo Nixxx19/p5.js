@@ -247,6 +247,8 @@ model(myModel);              // renders both slices correctly
 
 this is detected internally by diffing material state in `GeometryBuilder`. this is ambitious but achievable and extends the fix from imported models to procedurally built ones.
 
+since this touches the behaviour of an existing api, i will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
+
 ### 5.5 texture loading, eager vs lazy
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
@@ -505,3 +507,5 @@ my position is to not include metalness in this gsoc project, and here is why i 
 what i will do instead is design the materialProfile object to be extensible from the start. the schema is a plain javascript object, so adding `metalness: null` as a field in a follow-on pr is trivial once someone decides what source format should populate it. i will also file a github issue at the end of gsoc that formally tracks pbr materialProfile extensions so the conversation happens in the right place.
 
 i want to confirm with dave that this sequencing makes sense, since he was the one who raised it.
+
+the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
