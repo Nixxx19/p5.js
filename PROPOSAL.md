@@ -234,7 +234,10 @@ model(model, count = 1) {
   if (model._materialSlices && model._materialSlices.length > 1) {
     // new: multi-draw path, loop through slices
     if (this.geometryBuilder) {
-      // inside buildGeometry() — add each slice to the builder
+      // inside buildGeometry() — geometry only, material state not preserved.
+      // GeometryBuilder.addGeometry() flattens vertices into one combined geometry
+      // and discards texture/material per slice. full multi-material support inside
+      // buildGeometry() is Phase 5's scope; this path handles geometry capture only.
       for (const slice of model._materialSlices) {
         this.geometryBuilder.addRetained(slice.geometry);
       }
