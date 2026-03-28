@@ -20,9 +20,9 @@ the difference is not subtle:
 
 both sketches use the exact same geometry and the exact same `model()` call. the only difference is whether the renderer knows how to loop through material slices.
 
-what makes this worse is that the failure is completely silent. p5.js does not throw an error. it does not log a warning to the console. `loadModel()` resolves successfully and hands back a geometry object. the user stares at a grey blob and assumes they did something wrong. they search for help and eventually find out they need to open blender and bake textures. most of them give up long before that.
+what makes this worse is that the failure is completely silent. `loadModel()` resolves successfully and hands back a geometry object. the user stares at a grey blob and assumes they did something wrong. they eventually find out they need to open blender and bake textures. most of them give up long before that.
 
-this project removes that wall without changing a single line of user code. the user still writes `loadModel()` and `model()`. under the hood, the parser is taught to slice geometry by material boundary, and the renderer is taught to loop through those slices, each with its own texture and material uniforms.
+this project removes that wall without changing a single line of user code. under the hood, the parser is taught to slice geometry by material boundary, and the renderer is taught to loop through those slices, each with its own texture and material uniforms.
 
 this is directly in line with p5.js's core value: reduce cognitive load, maximise access. a beginner should not have to open blender, learn uv-baking, or understand what a `uSampler` is. they should just be able to use art.
 
