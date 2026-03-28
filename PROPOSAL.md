@@ -365,17 +365,18 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
 
-| phase | work | hours |
-|---|---|---|
-| 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | 40h |
-| 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | 35h |
-| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | 55h |
-| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | 50h |
-| 5 | `buildGeometry()` mid-draw material boundary detection | 35h |
-| 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | 40h |
-| 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | 25h |
-| 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | 20h |
-| total | | 300h |
+| phase | work | weeks | hours | buffer |
+|---|---|---|---|---|
+| 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
+| 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
+| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 10h |
+| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 10h |
+| 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
+| 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
+| 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
+| 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
+| 9 | overflow, stretch goals, and final review | week 21-22 | 25h | — |
+| **total** | | **22 weeks** | **325h** | **50h** |
 
 each phase estimate includes roughly 15 to 20 percent buffer for code review cycles, unexpected edge cases, and iteration. phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. the 55h and 50h allocations for those phases reflect that risk. if a phase finishes under estimate the saved hours roll into phase 6 since testing can always absorb more time.
 
