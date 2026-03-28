@@ -367,7 +367,7 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
 
-| phase | work | weeks | hours | buffer (in hrs) |
+| phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
 | 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
 | 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
