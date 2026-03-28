@@ -365,22 +365,23 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
 
-| phase | work | weeks | hours | buffer |
+| phase | work | weeks | hours | buffer (included in hours) |
 |---|---|---|---|---|
 | 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
 | 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
-| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 10h |
-| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 10h |
+| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
+| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
 | 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
 | 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
 | 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
-| 9 | overflow, stretch goals, and final review | week 21-22 | 25h | — |
-| **total** | | **22 weeks** | **325h** | **50h** |
+| **total** | | **20 weeks** | **300h** | **60h** |
 
-each phase estimate includes roughly 15 to 20 percent buffer for code review cycles, unexpected edge cases, and iteration. phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. the 55h and 50h allocations for those phases reflect that risk. if a phase finishes under estimate the saved hours roll into phase 6 since testing can always absorb more time.
+the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
-buffer time came up in the community bonding Q&A session with the mentors. i do not treat these estimates as exact targets. i treat them as maximum allocations. the real goal is to finish phases 3 and 4 with enough headroom that testing is not squeezed. if something takes longer than expected in the parser, i will know early because i am already familiar with the code from writing pr #8666, and i can flag it before it cascades.
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time.
+
+weeks 21 and 22 are intentionally left free. they exist as overflow absorption if any phase runs long, and as stretch goal space if everything lands on time. this directly addresses the feedback that the timeline felt tight given the scope.
 
 
 ## 8. expected outcomes
