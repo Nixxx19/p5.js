@@ -381,7 +381,7 @@ the buffer column is not additional time on top of 300 hours. it is already coun
 
 phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time.
 
-weeks 21 and 22 are intentionally left free. they exist as overflow absorption if any phase runs long, and as stretch goal space if everything lands on time. this directly addresses the feedback that the timeline felt tight given the scope.
+the 300h of core work spans 20 weeks (phases 1-8). the remaining 2 weeks of the 22-week gsoc window are reserved for overflow absorption if any phase runs long, and for stretch goals if everything lands on time. this directly addresses the feedback that the timeline felt tight given the scope.
 
 
 ## 8. expected outcomes
