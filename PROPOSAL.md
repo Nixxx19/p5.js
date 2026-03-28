@@ -375,13 +375,15 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
 | 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
-| **total** | | **20 weeks** | **300h** | **60h** |
+| **core total** | | **week 1-20** | **300h** | **60h** |
+| overflow + stretch | if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures | week 21-22 | — | — |
+| **gsoc total** | | **22 weeks** | **300h** | — |
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
 phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time.
 
-the 300h of core work spans 20 weeks (phases 1-8). the remaining 2 weeks of the 22-week gsoc window are reserved for overflow absorption if any phase runs long, and for stretch goals if everything lands on time. this directly addresses the feedback that the timeline felt tight given the scope.
+weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
 
 ## 8. expected outcomes
