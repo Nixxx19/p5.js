@@ -294,6 +294,18 @@ lazy: load textures on first render. reduces initial load time for large models 
 
 i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
 
+the async coordination works as follows: `loadModel()` is already an `async` function. during parsing, every `map_*` path found by `parseMtl()` triggers a `loadImage()` call and the returned promise is pushed into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before the first `draw()` frame — no per-frame flicker, no partial renders. the mechanism is identical to how p5.js already handles multiple `loadImage()` calls inside `preload()`, the runtime waits for all pending async operations before starting the draw loop.
+
+### 5.6 error handling
+
+three failure modes and how the implementation handles each:
+
+**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path — same behaviour as today, zero regression.
+
+**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path — unlike today where this failure is completely silent.
+
+**partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. no slice's failure affects any other slice.
+
 the diagram below shows all three layers together: parser, data, and renderer, and how they connect. the parser produces the slices, the data layer holds them privately on the geometry object, and the renderer loops through them at draw time. each layer is independently testable and the public api never changes.
 
 <p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
