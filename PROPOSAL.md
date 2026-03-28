@@ -365,19 +365,19 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
 
-| phase | work | weeks | hours | buffer (included in hours) |
+| phase | work | wks | hours | buffer (included in hours) |
 |---|---|---|---|---|
-| 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
-| 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
-| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
-| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
-| 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
-| 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
-| 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
-| 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
-| **core total** | | **week 1-20** | **300h** | **60h** |
-| overflow + stretch | if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures | week 21-22 | — | — |
-| **gsoc total** | | **22 weeks** | **300h** | — |
+| 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | 1-2 | 40h | 5h |
+| 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | 3-5 | 35h | 5h |
+| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | 6-8 | 55h | 15h |
+| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | 9-11 | 50h | 15h |
+| 5 | `buildGeometry()` mid-draw material boundary detection | 12-13 | 35h | 5h |
+| 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | 14-16 | 40h | 5h |
+| 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | 17-18 | 25h | 5h |
+| 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | 19-20 | 20h | 5h |
+| **core total** | | **1-20** | **300h** | **60h** |
+| overflow + stretch | if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures | 21-22 | — | — |
+| **gsoc total** | | **22** | **300h** | — |
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
