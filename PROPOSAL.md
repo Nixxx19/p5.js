@@ -240,9 +240,10 @@ model(model, count = 1) {
       }
     } else {
       for (const slice of model._materialSlices) {
+        this.push();                                      // save caller's material state
         this._applyMaterialProfile(slice.materialProfile);
         this._drawGeometry(slice.geometry, { count });
-        this._resetMaterialProfile();
+        this.pop();                                       // restore caller's material state
       }
     }
   } else {
@@ -263,6 +264,8 @@ model(model, count = 1) {
 ```
 
 `_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today. if `map_Kd` is absent from a slice, the slicer falls back to `diffuseColor` as `ambientMaterial` — the same fallback the poc uses today. under the hood, each slice results in one `gl.drawElements()` call with its own texture unit bound, replacing the single call that currently covers the whole model.
+
+the per-slice draw loop uses `push()`/`pop()` rather than a custom `_resetMaterialProfile()`. this is necessary to preserve whatever material state the caller had set before calling `model()` — for example, if the user called `texture(myTex)` before `model(robot)`, a null-reset would silently destroy `myTex` and break any geometry drawn after the call. `push()` saves the full renderer state before each slice, `pop()` restores it after. the poc already uses this pattern correctly and the production implementation follows it for the same reason.
 
 the per-slice gpu buffer caching works as follows: each slice's sub-geometry is a separate `p5.Geometry` object with its own `gid`. `_getOrMakeCachedBuffers()` keys the buffer cache on `gid`, so 12 slices produce 12 separate gpu buffer objects — uploaded once on first draw and reused on every subsequent frame, the same caching behaviour as a single geometry today but applied per slice.
 
