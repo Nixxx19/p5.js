@@ -104,7 +104,9 @@ model(geom);                       // breaks — model() only accepts p5.Geometr
 // option c — user code unchanged:
 let geom = loadModel('robot.obj'); // still returns p5.Geometry
 model(geom);                       // works for 1 or 12 materials, same call
-``` diya's feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with dave's parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
+```
+
+diya's feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with dave's parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
 
 ### option b: public geometry.materialGroups property (rejected)
 
