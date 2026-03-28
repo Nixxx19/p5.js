@@ -365,29 +365,19 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
 
-<table>
-<colgroup>
-<col style="width:7%">
-<col style="width:40%">
-<col style="width:22%">
-<col style="width:8%">
-<col style="width:23%">
-</colgroup>
-<thead><tr><th>phase</th><th>work</th><th>weeks</th><th>hours</th><th>buffer (included in hours)</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine</td><td>week 1-2</td><td>40h</td><td>5h</td></tr>
-<tr><td>2</td><td>extend <code>parseMtl()</code>: all mtl tokens and texture loading pipeline</td><td>week 3-5</td><td>35h</td><td>5h</td></tr>
-<tr><td>3</td><td>rewrite <code>parseObj()</code> slicer: per-material vertex buckets, uv mapping per slice, face-index localisation</td><td>week 6-8</td><td>55h</td><td>15h</td></tr>
-<tr><td>4</td><td>extend <code>Renderer3D.model()</code>: multi-draw loop, per-slice material binding, buffer cache per slice</td><td>week 9-11</td><td>50h</td><td>15h</td></tr>
-<tr><td>5</td><td><code>buildGeometry()</code> mid-draw material boundary detection</td><td>week 12-13</td><td>35h</td><td>5h</td></tr>
-<tr><td>6</td><td>visual tests (screenshot comparison), unit tests, fixture obj/mtl files</td><td>week 14-16</td><td>40h</td><td>5h</td></tr>
-<tr><td>7</td><td>docs: jsdoc for <code>loadModel()</code>, <code>model()</code>, <code>buildGeometry()</code>; reference page examples</td><td>week 17-18</td><td>25h</td><td>5h</td></tr>
-<tr><td>8</td><td>api parity audit, edge cases, performance, create follow-up issues for unimplemented features</td><td>week 19-20</td><td>20h</td><td>5h</td></tr>
-<tr><td><strong>core total</strong></td><td></td><td><strong>week 1-20</strong></td><td><strong>300h</strong></td><td><strong>60h</strong></td></tr>
-<tr><td>overflow + stretch</td><td>if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures</td><td>week 21-22</td><td>—</td><td>—</td></tr>
-<tr><td><strong>gsoc total</strong></td><td></td><td><strong>22 weeks</strong></td><td><strong>300h</strong></td><td>—</td></tr>
-</tbody>
-</table>
+| phase | work | weeks | hours | buffer (included in hours) |
+|---|---|---|---|---|
+| 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
+| 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
+| 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
+| 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
+| 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
+| 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
+| 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
+| 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
+| **core total** | | **week 1-20** | **300h** | **60h** |
+| overflow + stretch | if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures | week 21-22 | — | — |
+| **gsoc total** | | **22 weeks** | **300h** | — |
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
