@@ -94,7 +94,17 @@ when i first approached this problem i identified three possible architectural s
 
 create a new class that wraps an array of `p5.Geometry` objects. `loadModel()` returns a `p5.GeometryGroup` when it detects multiple materials. overload `model()` to accept either type.
 
-why i rejected it: this is a breaking change. any code doing `instanceof p5.Geometry` checks would fail. diya's feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with dave's parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
+why i rejected it: this is a breaking change. any code doing `instanceof p5.Geometry` checks would fail. concretely:
+
+```javascript
+// option a — user code must branch on return type:
+let geom = loadModel('robot.obj'); // now returns p5.GeometryGroup, not p5.Geometry
+model(geom);                       // breaks — model() only accepts p5.Geometry
+
+// option c — user code unchanged:
+let geom = loadModel('robot.obj'); // still returns p5.Geometry
+model(geom);                       // works for 1 or 12 materials, same call
+``` diya's feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with dave's parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
 
 ### option b: public geometry.materialGroups property (rejected)
 
@@ -227,6 +237,10 @@ model(model, count = 1) {
 
 `_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today. if `map_Kd` is absent from a slice, the slicer falls back to `diffuseColor` as `ambientMaterial` — the same fallback the poc uses today. under the hood, each slice results in one `gl.drawElements()` call with its own texture unit bound, replacing the single call that currently covers the whole model.
 
+the per-slice gpu buffer caching works as follows: each slice's sub-geometry is a separate `p5.Geometry` object with its own `gid`. `_getOrMakeCachedBuffers()` keys the buffer cache on `gid`, so 12 slices produce 12 separate gpu buffer objects — uploaded once on first draw and reused on every subsequent frame, the same caching behaviour as a single geometry today but applied per slice.
+
+when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawBuffers()` which calls `shader.bindTextures()` before issuing `gl.drawElements()` — the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
+
 ### 5.4 buildGeometry() integration (dave's suggestion)
 
 dave noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
@@ -357,6 +371,8 @@ function drawMultiMaterial(geom) {
 
 the poc renders 12 separate material slices (shirt, jacket, head, eyes, irises, pupils, eye shine, eyebrows, nose, lips, hair, shoes) each with their own texture or colour. this is completely impossible with the current p5.js renderer. the poc proves the architecture works end to end in dev-2.0.
 
+the poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. it answers the question "do the layers work together?" — the parser, data layer, and renderer all behave as the proposal describes. the implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
+
 
 ## 7. scope and why this is 300 hours
 
@@ -378,12 +394,12 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
 | **core total** | | **week 1-20** | **300h** | **60h** |
-| overflow + stretch | if any phase runs over, absorb here. if everything lands on time, use for stretch goals: pbr property stubs, better error messages, additional test fixtures | week 21-22 | — | — |
+| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | — |
 | **gsoc total** | | **22 weeks** | **300h** | — |
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
-phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer — it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix.
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer — it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only — the visual screenshot comparison suite is deferred to a follow-up pr. the core deliverables (parser, data layer, renderer) are never at risk.
 
 weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
@@ -418,7 +434,7 @@ p5.js's mission is access and inclusion. kit made this explicit in the session: 
 
 sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
 
-the problem is made worse by how it fails. there is no error. there is no console warning. `loadModel()` returns successfully. from the user's perspective, they did everything right and got a broken result. a beginner's first instinct is to assume they made a mistake somewhere. they spend time debugging code that is perfectly correct. when they eventually find the real answer, it is that they need to open blender, learn the texture baking workflow (which takes hours to understand), export again, and then try again. most beginners never make it that far. p5.js is being used in classrooms, creative coding workshops, and by artists who are not software engineers. educators who build 3d assignments around p5.js hit this wall every time a student tries to load a real model. those users are stopped cold by this invisible wall.
+the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. p5.js is being used in classrooms, creative coding workshops, and by artists who are not software engineers. educators who build 3d assignments around p5.js hit this wall every time a student tries to load a real model.
 
 the specific gatekeeper this project removes:
 
@@ -429,12 +445,12 @@ the specific gatekeeper this project removes:
 5. blender has a learning curve of hundreds of hours and is not installed by default anywhere
 6. user gives up and abandons the 3d direction entirely
 
-after this project: step 3 renders correctly. steps 4, 5, 6 do not happen. the only prerequisite for using a multi-material 3d model in p5.js becomes "download a model and call loadModel." that is what access means in practice.
+after this project: step 3 renders correctly. steps 4, 5, 6 do not happen.
 
 
 ## 10. why i chose this project and what i bring to it
 
-i take an elective in gaming and animation as part of my coursework. that course lives in blender. we model things, rig them, texture them, and export them. i got used to working with multi-material meshes where the jacket is one material, the skin is another, the shoes are another, and blender keeps them all separate because that is how you actually build things. when i started bringing those models into p5.js for creative coding projects, i hit the wall immediately. the same character i had spent hours texturing in blender came out as a single flat grey blob. no error. nothing. i genuinely thought i was exporting wrong. i tried different export settings, re-checked my uv maps, looked at the obj file in a text editor. the usemtl groups were all there. the map_Kd paths were all there. p5.js was just silently ignoring all of it.
+i take an elective in gaming and animation as part of my coursework. that course lives in blender. we model things, rig them, texture them, and export them. i got used to working with multi-material meshes where the jacket is one material, the skin is another, the shoes are another, and blender keeps them all separate because that is how you actually build things. when i started bringing those models into p5.js for creative coding projects, i hit the wall immediately. the same character i had spent hours texturing in blender came out as a single flat grey blob. no error. nothing. i genuinely thought i was exporting wrong. i tried different export settings, re-checked my uv maps, re-exported with different obj options, checked the file in a different viewer to confirm the textures were actually there. they were. i then opened the obj file in a text editor and saw all the `usemtl` groups exactly where they should be. the `map_Kd` paths were in the mtl file. everything was correct. that was when i opened `loading.js` directly and traced what `parseObj()` actually does with a `usemtl` token. i found it reads the material name, looks it up, bakes just the `Kd` colour into `vertexColors`, and then discards the boundary entirely. the texture path is stored by `parseMtl()` but never handed to the renderer. that single read told me exactly what was broken and exactly where.
 
 that experience is the real origin of this proposal. i am not proposing this because it looked like an interesting gsoc issue. i ran into this wall personally, in a real workflow, coming from a course that specifically teaches the pipeline this bug breaks. i know what it feels like to be on the other side of it and i know exactly which step in the pipeline swallows the material data. every student in that class who tries to bring their blender work into p5.js hits the same wall. fixing this means they don't have to.
 
@@ -484,7 +500,7 @@ my current position is option b for v1, because it adds zero complexity, it matc
 
 should mid-draw material state changes automatically create a new slice (always-on), or should this be an opt-in flag?
 
-i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past dave since it touches the behaviour of an existing api.
+i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past dave since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands — phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
 
 **decision 3: texture loading, eager vs lazy**
 
