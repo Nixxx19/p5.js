@@ -50,12 +50,12 @@ i studied the following files directly in the `dev-2.0` branch:
 | `src/core/p5.Renderer3D.js` | `model()`, `_drawGeometry()`, `_drawFills()`, `buildGeometry()` |
 | `src/webgl/p5.RendererGL.js` | `_drawBuffers()`, the single `gl.drawElements()` call |
 | `src/webgl/p5.Geometry.js` | all 20 properties of the geometry class |
-| `src/webgl/material.js` | `fn.texture()`, `shader.bindTextures()`, global texture state |
+| `src/webgl/material.js` | `fn.texture()`, global texture state |
 | `src/webgl/p5.Shader.js` | `bindTextures()`, confirms one global texture per draw call |
 
 key findings:
 
-- `beginGeometry()` and `endGeometry()` do not exist in dev-2.0. the replacement is `buildGeometry(callback)` which wraps them internally. i built my entire poc using this api to ensure the proposal aligns with the new 2.0 architecture.
+- `beginGeometry()` and `endGeometry()` are not exposed as public user-facing functions in dev-2.0. they exist as internal renderer methods but there is no `fn.beginGeometry` or `fn.endGeometry`. the user-facing replacement is `buildGeometry(callback)`, which calls them internally. i built my entire poc using this api to ensure the proposal aligns with the new 2.0 architecture.
 - `_materialSlices`, `materialGroups`, `subGeometries`, none of these exist on `Geometry`. this is the gap to fill.
 - `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
 - dave's comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
@@ -207,7 +207,15 @@ the existing `model()` method in `Renderer3D`:
 ```javascript
 model(model, count = 1) {
   if (model.vertices.length > 0) {
-    this._drawGeometry(model, { count });
+    if (this.geometryBuilder) {
+      this.geometryBuilder.addRetained(model);
+    } else {
+      if (!this.geometryInHash(model.gid)) {
+        model._edgesToVertices();
+        this._getOrMakeCachedBuffers(model);
+      }
+      this._drawGeometry(model, { count });
+    }
   }
 }
 ```
@@ -217,19 +225,30 @@ extended model():
 model(model, count = 1) {
   if (model._materialSlices && model._materialSlices.length > 1) {
     // new: multi-draw path, loop through slices
-    for (const slice of model._materialSlices) {
-      this._applyMaterialProfile(slice.materialProfile);
-      this._drawGeometry(slice.geometry, { count });
-      this._resetMaterialProfile();
+    if (this.geometryBuilder) {
+      // inside buildGeometry() — add each slice to the builder
+      for (const slice of model._materialSlices) {
+        this.geometryBuilder.addRetained(slice.geometry);
+      }
+    } else {
+      for (const slice of model._materialSlices) {
+        this._applyMaterialProfile(slice.materialProfile);
+        this._drawGeometry(slice.geometry, { count });
+        this._resetMaterialProfile();
+      }
     }
   } else {
     // existing: single-draw path, no change, no regression
     if (model.vertices.length > 0) {
-      if (!this.geometryInHash(model.gid)) {
-        model._edgesToVertices();
-        this._getOrMakeCachedBuffers(model);
+      if (this.geometryBuilder) {
+        this.geometryBuilder.addRetained(model);
+      } else {
+        if (!this.geometryInHash(model.gid)) {
+          model._edgesToVertices();
+          this._getOrMakeCachedBuffers(model);
+        }
+        this._drawGeometry(model, { count });
       }
-      this._drawGeometry(model, { count });
     }
   }
 }
