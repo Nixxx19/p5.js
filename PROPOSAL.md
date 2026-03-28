@@ -225,7 +225,7 @@ model(model, count = 1) {
 }
 ```
 
-`_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today.
+`_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today. if `map_Kd` is absent from a slice, the slicer falls back to `diffuseColor` as `ambientMaterial` — the same fallback the poc uses today. under the hood, each slice results in one `gl.drawElements()` call with its own texture unit bound, replacing the single call that currently covers the whole model.
 
 ### 5.4 buildGeometry() integration (dave's suggestion)
 
@@ -383,7 +383,7 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
-phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time.
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer — it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix.
 
 weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
@@ -418,7 +418,7 @@ p5.js's mission is access and inclusion. kit made this explicit in the session: 
 
 sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
 
-the problem is made worse by how it fails. there is no error. there is no console warning. `loadModel()` returns successfully. from the user's perspective, they did everything right and got a broken result. a beginner's first instinct is to assume they made a mistake somewhere. they spend time debugging code that is perfectly correct. when they eventually find the real answer, it is that they need to open blender, learn the texture baking workflow (which takes hours to understand), export again, and then try again. most beginners never make it that far. p5.js is being used in classrooms, creative coding workshops, and by artists who are not software engineers. those users are stopped cold by this invisible wall.
+the problem is made worse by how it fails. there is no error. there is no console warning. `loadModel()` returns successfully. from the user's perspective, they did everything right and got a broken result. a beginner's first instinct is to assume they made a mistake somewhere. they spend time debugging code that is perfectly correct. when they eventually find the real answer, it is that they need to open blender, learn the texture baking workflow (which takes hours to understand), export again, and then try again. most beginners never make it that far. p5.js is being used in classrooms, creative coding workshops, and by artists who are not software engineers. educators who build 3d assignments around p5.js hit this wall every time a student tries to load a real model. those users are stopped cold by this invisible wall.
 
 the specific gatekeeper this project removes:
 
@@ -436,7 +436,7 @@ after this project: step 3 renders correctly. steps 4, 5, 6 do not happen. the o
 
 i take an elective in gaming and animation as part of my coursework. that course lives in blender. we model things, rig them, texture them, and export them. i got used to working with multi-material meshes where the jacket is one material, the skin is another, the shoes are another, and blender keeps them all separate because that is how you actually build things. when i started bringing those models into p5.js for creative coding projects, i hit the wall immediately. the same character i had spent hours texturing in blender came out as a single flat grey blob. no error. nothing. i genuinely thought i was exporting wrong. i tried different export settings, re-checked my uv maps, looked at the obj file in a text editor. the usemtl groups were all there. the map_Kd paths were all there. p5.js was just silently ignoring all of it.
 
-that experience is the real origin of this proposal. i am not proposing this because it looked like an interesting gsoc issue. i ran into this wall personally, in a real workflow, coming from a course that specifically teaches the pipeline this bug breaks. i know what it feels like to be on the other side of it and i know exactly which step in the pipeline swallows the material data.
+that experience is the real origin of this proposal. i am not proposing this because it looked like an interesting gsoc issue. i ran into this wall personally, in a real workflow, coming from a course that specifically teaches the pipeline this bug breaks. i know what it feels like to be on the other side of it and i know exactly which step in the pipeline swallows the material data. every student in that class who tries to bring their blender work into p5.js hits the same wall. fixing this means they don't have to.
 
 when i saw this listed as a gsoc project i already knew the pain point from the user side. what i did next was go read the source to understand the technical side. i read pr #6710 end to end, traced the entire pipeline from `loadModel()` down to `gl.drawElements()`, opened the dev-2.0 branch and read six files in detail. i found a real crash bug in `parseObj()` while doing that read and opened pr #8666 to fix it. by the time i started writing this proposal i had a working poc that proved the three-layer architecture was sound in dev-2.0.
 
@@ -447,8 +447,8 @@ that combination of hitting the problem as a user, going deep into the source as
 i have contributed across the full p5.js ecosystem before this gsoc application, not just the specific file this project touches.
 
 **p5.js core (2 open prs):**
-- **pr #8666:** fixes the `parseObj()` crash for mixed-material obj models. in the exact file this gsoc project modifies.
-- **pr #8555:** fixes a browser freeze when tessellating geometry over 50k vertices. a webgl renderer fix in the same rendering layer this project works in.
+- **pr #8666:** fixes the `parseObj()` crash for mixed-material obj models. in the exact file this gsoc project modifies. this is directly in the 3d/webgl rendering path.
+- **pr #8555:** fixes a browser freeze when tessellating geometry over 50k vertices. a webgl renderer fix in the same rendering layer this project works in. both open prs are in the core 3d pipeline — not peripheral fixes.
 
 **p5.js web editor (13 merged prs):**
 the web editor is where beginners actually write their p5.js code. i have 13 merged contributions there covering security fixes (oauth, bcrypt, mass assignment vulnerabilities), performance (502 timeout on project downloads, zip streaming), accessibility (aria-live on form errors), and ux (signup flow when email verification fails). the range matters because it shows i understand the environment where the user experiences this bug, not just the renderer layer where it originates.
@@ -506,6 +506,6 @@ my position is to not include metalness in this gsoc project, and here is why i 
 
 what i will do instead is design the materialProfile object to be extensible from the start. the schema is a plain javascript object, so adding `metalness: null` as a field in a follow-on pr is trivial once someone decides what source format should populate it. i will also file a github issue at the end of gsoc that formally tracks pbr materialProfile extensions so the conversation happens in the right place.
 
-i want to confirm with dave that this sequencing makes sense, since he was the one who raised it.
+i want to confirm with dave that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
 
 the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
