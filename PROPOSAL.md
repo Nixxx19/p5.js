@@ -205,6 +205,10 @@ uv re-indexing: obj uv coordinates (`vt`) are stored in a single global list and
 
 draw order: slices are inserted in obj file order, which matches the artist's 3d software export order. no automatic depth sorting for opaque meshes since the depth buffer handles occlusion correctly for opaque geometry automatically.
 
+`_makeTriangleEdges()`: in the current code, `loadModel()` calls `model._makeTriangleEdges()` on the parent geometry after `parseObj()` returns. this generates stroke geometry (line vertices, tangents, caps, joins). in the sliced design, all vertices live in sub-geometries — the parent has none — so the existing single call produces nothing. the slicer will call `_makeTriangleEdges()` on each slice's sub-geometry individually before attaching it to `_materialSlices`.
+
+`hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely — each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
+
 ### 5.3 renderer changes (p5.Renderer3D.js)
 
 the existing `model()` method in `Renderer3D`:
