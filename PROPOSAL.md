@@ -560,7 +560,21 @@ The diagram below shows all three layers together: parser, data, and renderer, a
 
 <p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
 
-## 3.5 Proof of concept
+## 3.5 Potential roadblocks
+
+### Roadblock 1: Vertex deduplication vs. per-slice UV mapping
+
+The current `parseObj()` deduplicates vertices globally across all material groups before building the geometry. When the slicer splits geometry per material boundary, UVs assigned to shared vertices may conflict between slices — a vertex shared by two material groups carries only one UV coordinate in the deduplicated array, but each slice may expect a different UV for that vertex. Resolving this requires localising vertex deduplication to within each slice, so shared vertices are re-indexed independently per material group rather than globally. This is the core technical risk of Phase 3 and the primary reason its buffer is 15h rather than 5h. The proof of concept in section 3.6 validates that the per-slice approach is geometrically sound before this becomes production code.
+
+### Roadblock 2: GPU buffer cache behaviour with many slices
+
+`_getOrMakeCachedBuffers()` in `p5.RendererGL` caches uploaded GPU buffers keyed on a geometry ID (`gid`). It was designed around single-geometry models. For a model with 20+ material groups, every slice needs its own cache entry. The risk is that many small cache entries per model cause unexpected memory growth or cache eviction behaviour in long-running sketches where models are loaded and unloaded repeatedly. Phase 8 includes an empirical test with a 100+ material group model to verify the cache scales linearly without memory issues. If a problem is found, the mitigation is to namespace slice `gid` values under the parent model's `gid` and evict all slices together when the parent is evicted.
+
+### Roadblock 3: Visual test infrastructure for 3D rendering
+
+p5.js's screenshot comparison test infrastructure is more established for 2D than for WebGL/3D. GPU-rendered output varies slightly across machines, drivers, and browsers, so a fixed pixel-perfect comparison will produce false failures. The existing visual test setup uses a configurable tolerance threshold to handle this, but that threshold has been tuned for 2D output. Phase 6 may require calibrating or extending the tolerance configuration for 3D scenes before the actual multi-material tests can be written. If the infrastructure turns out to need significant work, the visual regression tests are scoped down to the most critical cases (correct texture per slice, correct colour fallback) and the remaining coverage is filed as a follow-up issue.
+
+## 3.6 Proof of concept
 
 I built a working poc to validate all three layers of this architecture before writing this proposal. You can run it here:
 
@@ -656,7 +670,7 @@ The poc renders 12 separate material slices (shirt, jacket, head, eyes, irises, 
 The poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. It answers the question "do the layers work together?" - the parser, data layer, and renderer all behave as the proposal describes. The implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
 
 
-## 3.6 Expected outcomes
+## 3.7 Expected outcomes
 
 By the end of gsoc:
 
@@ -680,7 +694,7 @@ function draw() {
 ```
 
 
-## 3.7 Accessibility angle
+## 3.8 Accessibility angle
 
 P5.js's mission is access and inclusion. **Kit** ([@ksen0](https://github.com/ksen0)) made this explicit in the session: "all new proposals should make the argument of how the new feature improves access and inclusion." this project has a direct and concrete answer to that.
 
@@ -714,7 +728,7 @@ An educator can now assign any sketchfab model as a starting point without pre-p
 This failure is independently documented by users who have no connection to each other. In [this discourse thread from 2019](https://discourse.processing.org/t/load-obj-model-with-mtl-file-and-jpg-texture/4634), multiple users reported that `loadModel()` loads the mesh but ignores the texture entirely  - the only workaround discovered was to manually `loadImage()` and flip the texture vertically via `createGraphics`. In [this thread](https://discourse.processing.org/t/how-can-I-color-or-texture-each-faces-of-a-loaded-obj-file/12688), a user asked specifically how to colour each face of a loaded obj file  - the answer was that there is no native solution. Same wall, different years, different people. The fix never came because it required an architectural change, not a patch.
 
 
-## 3.8 Why I chose this project and what I bring to it
+## 3.9 Why I chose this project and what I bring to it
 
 I take an elective in gaming and animation as part of my coursework. That course lives in blender. We model things, rig them, texture them, and export them. I got used to working with multi-material meshes where the jacket is one material, the skin is another, the shoes are another, and blender keeps them all separate because that is how you actually build things. When I started bringing those models into p5.js for creative coding projects, I hit the wall immediately. The same character I had spent hours texturing in blender came out as a single flat grey blob. No error. nothing. I genuinely thought I was exporting wrong. I tried different export settings, re-checked my uv maps, re-exported with different obj options, checked the file in a different viewer to confirm the textures were actually there. They were. I then opened the obj file in a text editor and saw all the `usemtl` groups exactly where they should be. The `map_Kd` paths were in the mtl file. Everything was correct. That was when I opened `loading.js` directly and traced what `parseObj()` actually does with a `usemtl` token. I found it reads the material name, looks it up, bakes just the `Kd` colour into `vertexColors`, and then discards the boundary entirely. The texture path is stored by `parseMtl()` but never handed to the renderer. That single read told me exactly what was broken and exactly where.
 
