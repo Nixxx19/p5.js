@@ -775,6 +775,8 @@ The gsoc idea page lists this as 175h or 300h. I am proposing 300h because:
 | **Core total** | | **Weeks 1-20** | **300h** | **60h** |
 | Overflow / stretch | Absorb slippage or pursue: (1) better error messages for missing `map_Kd`, (2) additional real-model fixtures, (3) PBR property stubs on `materialProfile` | 21-22 | up to 25h | - |
 
+Weeks 21 and 22 are the final two weeks of the 22-week GSoC window. No new work is scheduled here. If a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. If all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues. The "up to 25h" shown for overflow is the available capacity of those two weeks, not an addition to the 300h commitment — the total committed hours remain 300h regardless.
+
 The buffer column is not additional time on top of 300 hours. It is already counted inside each phase's hours. Phase 3 is allocated 55h total, of which 15h is breathing room for code review cycles, unexpected edge cases, and PR iteration. Every phase is structured this way. The total stays at 300h.
 
 Phases 3 and 4 carry the most risk because the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. If a phase finishes under estimate, saved hours roll into Phase 6, since testing can always absorb more time. If Phase 3 still overruns, Phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer since it is an extra deliverable beyond the original spec. **The core deliverables (parser, data layer, renderer) are never at risk.**
