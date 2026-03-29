@@ -286,7 +286,7 @@ when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's ac
 
 dave noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
 
-in phase 4 of the project, i will extend `buildGeometry()` so that if a user calls `texture()` or `specularMaterial()` mid-draw, a new slice boundary is automatically created:
+in phase 5 of the project, i will extend `buildGeometry()` so that if a user calls `texture()` or `specularMaterial()` mid-draw, a new slice boundary is automatically created:
 
 ```javascript
 // user code, no new api, just works:
