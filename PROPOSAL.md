@@ -323,6 +323,22 @@ on end-of-file:
   7. If more than 1 slices, attach array as parent._materialSlices
 ```
 
+```mermaid
+flowchart TD
+    A([.obj file]) --> B[Read next line]
+    B --> C{Token?}
+    C -->|v / vn / vt| D[Add to current slice\nvertex pool]
+    C -->|usemtl name| E[Close current slice\nOpen new slice for name\nLook up materialProfile]
+    C -->|f face indices| F[Resolve global indices\nto slice-local indices\nAdd face to current slice]
+    C -->|end of file| G[Finalise last open slice]
+    D --> B
+    E --> B
+    F --> B
+    G --> H{How many slices?}
+    H -->|1 slice| I([Use existing single-draw path\nzero regression])
+    H -->|N slices| J([Attach as _materialSlices\non parent p5.Geometry])
+```
+
 The vertex-deduplication logic (`usedVerts` map, keyed by `vertexString + material`) already exists in the current code. The slicer reuses this: each slice has its own `usedVerts` scope so face indices are local to the slice.
 
 Uv re-indexing: obj uv coordinates (`vt`) are stored in a single global list and face tokens reference into it with global indices (e.g. `f 1/3/1 2/5/2` means vertex 1 with uv 3). When slicing by `usemtl` boundary, each slice has its own local vertex array starting at index 0. The slicer remaps every global `vt` reference to a per-slice local index as it copies vertices into each slice's array. This is the same index-localisation step already performed for vertex positions and normals, applied equally to uvs.
