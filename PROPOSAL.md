@@ -130,7 +130,7 @@ the difference is not subtle:
 | before (p5.js today) | after (this project) |
 |---|---|
 | <p align="center"><img src="https://github.com/user-attachments/assets/c9649c7f-2f96-4213-a6ad-08f7132688f9" /></p> | <p align="center"><img src="https://github.com/user-attachments/assets/b283bc81-e1ee-4c68-8add-6d052804121f" /></p> |
-| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. *(geometry assembled via `buildGeometry()` to simulate what the parser will produce - loading real `.obj`/`.mtl` files is detailed in section 3.4.2)* |
+| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. *(geometry assembled via `buildGeometry()` to simulate what the parser will produce - loading real `.obj`/`.mtl` files is detailed in sections 3.4.2 and 3.4.3)* |
 
 both sketches use the exact same geometry and the exact same `model()` call. the only difference is whether the renderer knows how to loop through material slices.
 
@@ -200,7 +200,51 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 
 ## 3.4 technical architecture
 
-### 3.4.1 data structure
+### 3.4.1 Phase 1 — community bonding & design decisions
+
+i have researched each of these thoroughly and have a clear position on each one. each decision touches the public api or shader pipeline and should have explicit sign-off from the team before i write production code. i want to align early rather than surface surprises at pr review.
+
+**decision 1: draw order for transparent slices**
+
+when a slice has `d < 1.0` (transparent), correct rendering requires back-to-front draw order. i have thought through three options:
+
+option a: sort transparent slices at load time based on estimated depth from the geometry bounds.
+
+option b: document that artists should order transparent faces last in their obj export, which is what most 3d tools already do by convention.
+
+option c: expose a `loadModel('file.obj', { sortTransparent: true })` option for users who need it.
+
+my current position is option b for v1, because it adds zero complexity, it matches what artists already do in blender and maya, and option c can follow as a documented enhancement. i want to confirm with **diya** ([@diyaayay](https://github.com/diyaayay)) and **claudine** ([@mingness](https://github.com/mingness)) that this matches how the team thinks about v1 scope before committing.
+
+**decision 2: buildGeometry() material boundary detection**
+
+should mid-draw material state changes automatically create a new slice (always-on), or should this be an opt-in flag?
+
+i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past **dave** ([@davepagurek](https://github.com/davepagurek)) since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands - phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
+
+**decision 3: texture loading, eager vs lazy**
+
+i prefer eager loading. all `map_*` textures get loaded inside `loadModel()`, which the user awaits in `async setup()`. since dev-2.0 awaits `setup()` before starting the draw loop, everything is ready before `draw()` starts. this is the simplest mental model and consistent with how dev-2.0 handles all async asset loading.
+
+lazy loading (loading on first render) would reduce startup time for models with many materials but adds state tracking, potential one-frame flicker, and more error-handling surface area. i think that tradeoff is not worth it for a first implementation. lazy loading can be a follow-up once the eager path is stable.
+
+**decision 4: private field convention**
+
+should `_materialSlices` use the `_` prefix convention (as most private fields in this codebase do) or es2022 `#` private fields?
+
+i checked the codebase and the `_` convention is overwhelmingly dominant. `#` private fields appear in almost none of the existing code. my preference is to match the existing convention and use `_materialSlices` for consistency, but i will follow whatever the team decides here since it is a style question not a technical one.
+
+**decision 5: pbr properties like metalness (**dave** ([@davepagurek](https://github.com/davepagurek))'s point)**
+
+**dave** ([@davepagurek](https://github.com/davepagurek)) specifically mentioned metalness alongside specularMaterial and textures as things that could not currently be swapped inside one geometry. the classic mtl format does not have a metalness field at all, it predates pbr pipelines entirely. so this raises a real question: should the materialProfile schema be extended to support pbr properties beyond what the mtl spec defines?
+
+my position is to not include metalness in this gsoc project, and here is why i came to that conclusion. the mtl format covers `Kd`, `Ks`, `Ka`, `Ns`, `d`, `map_Kd`, `map_Ks`, `map_Bump` and a handful of others. that is already a full project's worth of work to parse, load, and bind correctly. metalness in the pbr sense comes from gltf and other modern formats which have a completely different pipeline. trying to bolt it onto the mtl materialProfile now would mean designing a schema that serves two different file format families at once, which is the kind of thing that produces awkward apis.
+
+what i will do instead is design the materialProfile object to be extensible from the start. the schema is a plain javascript object, so adding `metalness: null` as a field in a follow-on pr is trivial once someone decides what source format should populate it. i will also file a github issue at the end of gsoc that formally tracks pbr materialProfile extensions so the conversation happens in the right place.
+
+i want to confirm with **dave** ([@davepagurek](https://github.com/davepagurek)) that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
+
+the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
 
 ```javascript
 // what loadModel() returns (p5.Geometry, unchanged public api)
@@ -238,8 +282,7 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 
 `map_Kd` is the only map bound to the shader in v1 - the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
 
-### 3.4.2 parser changes (loading.js)
-*Phase 2 (parseMtl · weeks 3–5) + Phase 3 (parseObj slicer · weeks 6–8)*
+### 3.4.2 Phase 2 — extend parseMtl()
 
 **parseMtl() extended:**
 ```
@@ -248,6 +291,18 @@ proposed: Kd, Ka, Ks, Ns, d, illum + map_Kd, map_Ka, map_Ks, map_Bump, map_Ns
           all map_* values trigger loadImage() inside loadModel(), awaited in
           async setup(), so all textures are resolved before draw() starts
 ```
+
+two options for when `map_Kd` textures are loaded from `parseMtl()`:
+
+eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. **textures are guaranteed ready before the first frame**. no complexity.
+
+lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
+
+i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
+
+the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
+
+### 3.4.3 Phase 3 — rewrite parseObj() slicer
 
 **parseObj() the slicer:**
 
@@ -278,8 +333,7 @@ draw order: slices are inserted in obj file order, which matches the artist's 3d
 
 `hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
 
-### 3.4.3 renderer changes (p5.Renderer3D.js)
-*Phase 4 · weeks 9–11*
+### 3.4.4 Phase 4 — extend Renderer3D.model()
 
 the existing `model()` method in `Renderer3D`:
 ```javascript
@@ -348,8 +402,7 @@ the per-slice gpu buffer caching works as follows: each slice's sub-geometry is 
 
 when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` - the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
 
-### 3.4.4 buildGeometry() integration (**dave** ([@davepagurek](https://github.com/davepagurek))'s suggestion)
-*Phase 5 · weeks 12–13*
+### 3.4.5 Phase 5 — buildGeometry() integration
 
 **dave** ([@davepagurek](https://github.com/davepagurek)) noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
 
@@ -371,21 +424,7 @@ this is detected internally by diffing material state in `GeometryBuilder`. this
 
 since this touches the behaviour of an existing api, i will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
 
-### 3.4.5 texture loading, eager vs lazy
-*Phase 2 · weeks 3–5*
-
-two options for when `map_Kd` textures are loaded from `parseMtl()`:
-
-eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. **textures are guaranteed ready before the first frame**. no complexity.
-
-lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
-
-i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
-
-the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
-
-### 3.4.6 error handling
-*Phase 3 + Phase 4*
+### 3.4.6 error handling & failure modes
 
 three failure modes and how the implementation handles each:
 
@@ -398,7 +437,6 @@ three failure modes and how the implementation handles each:
 the diagram below shows all three layers together: parser, data, and renderer, and how they connect. the parser produces the slices, the data layer holds them privately on the geometry object, and the renderer loops through them at draw time. each layer is independently testable and the public api never changes.
 
 <p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
-
 
 ## 3.5 proof of concept
 
@@ -602,13 +640,13 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 
 | phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
-| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) → §4.2 | week 1-2 | 40h | 5h |
-| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.5 | week 3-5 | 35h | 5h |
-| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.2, §3.4.6 | week 6-8 | 55h | 15h |
+| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) → §3.4.1 | week 1-2 | 40h | 5h |
+| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2 | week 3-5 | 35h | 5h |
+| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.4, §3.4.6 | week 6-8 | 55h | 15h |
 | community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
-| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.3, §3.4.6 | week 9-11 | 50h | 15h |
+| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.6 | week 9-11 | 50h | 15h |
 | community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
-| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.4 | week 12-13 | 35h | 5h |
+| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | week 12-13 | 35h | 5h |
 | Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
 | Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
@@ -622,53 +660,6 @@ phases 3 and 4 carry the most risk since the vertex deduplication logic and the 
 
 weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
-
-## 4.2 architectural decisions for the community bonding period
-*Phase 1 · weeks 1–2*
-
-i have researched each of these thoroughly and have a clear position on each one. each decision touches the public api or shader pipeline and should have explicit sign-off from the team before i write production code. i want to align early rather than surface surprises at pr review.
-
-**decision 1: draw order for transparent slices**
-
-when a slice has `d < 1.0` (transparent), correct rendering requires back-to-front draw order. i have thought through three options:
-
-option a: sort transparent slices at load time based on estimated depth from the geometry bounds.
-
-option b: document that artists should order transparent faces last in their obj export, which is what most 3d tools already do by convention.
-
-option c: expose a `loadModel('file.obj', { sortTransparent: true })` option for users who need it.
-
-my current position is option b for v1, because it adds zero complexity, it matches what artists already do in blender and maya, and option c can follow as a documented enhancement. i want to confirm with **diya** ([@diyaayay](https://github.com/diyaayay)) and **claudine** ([@mingness](https://github.com/mingness)) that this matches how the team thinks about v1 scope before committing.
-
-**decision 2: buildGeometry() material boundary detection**
-
-should mid-draw material state changes automatically create a new slice (always-on), or should this be an opt-in flag?
-
-i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past **dave** ([@davepagurek](https://github.com/davepagurek)) since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands - phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
-
-**decision 3: texture loading, eager vs lazy**
-
-i prefer eager loading. all `map_*` textures get loaded inside `loadModel()`, which the user awaits in `async setup()`. since dev-2.0 awaits `setup()` before starting the draw loop, everything is ready before `draw()` starts. this is the simplest mental model and consistent with how dev-2.0 handles all async asset loading.
-
-lazy loading (loading on first render) would reduce startup time for models with many materials but adds state tracking, potential one-frame flicker, and more error-handling surface area. i think that tradeoff is not worth it for a first implementation. lazy loading can be a follow-up once the eager path is stable.
-
-**decision 4: private field convention**
-
-should `_materialSlices` use the `_` prefix convention (as most private fields in this codebase do) or es2022 `#` private fields?
-
-i checked the codebase and the `_` convention is overwhelmingly dominant. `#` private fields appear in almost none of the existing code. my preference is to match the existing convention and use `_materialSlices` for consistency, but i will follow whatever the team decides here since it is a style question not a technical one.
-
-**decision 5: pbr properties like metalness (**dave** ([@davepagurek](https://github.com/davepagurek))'s point)**
-
-**dave** ([@davepagurek](https://github.com/davepagurek)) specifically mentioned metalness alongside specularMaterial and textures as things that could not currently be swapped inside one geometry. the classic mtl format does not have a metalness field at all, it predates pbr pipelines entirely. so this raises a real question: should the materialProfile schema be extended to support pbr properties beyond what the mtl spec defines?
-
-my position is to not include metalness in this gsoc project, and here is why i came to that conclusion. the mtl format covers `Kd`, `Ks`, `Ka`, `Ns`, `d`, `map_Kd`, `map_Ks`, `map_Bump` and a handful of others. that is already a full project's worth of work to parse, load, and bind correctly. metalness in the pbr sense comes from gltf and other modern formats which have a completely different pipeline. trying to bolt it onto the mtl materialProfile now would mean designing a schema that serves two different file format families at once, which is the kind of thing that produces awkward apis.
-
-what i will do instead is design the materialProfile object to be extensible from the start. the schema is a plain javascript object, so adding `metalness: null` as a field in a follow-on pr is trivial once someone decides what source format should populate it. i will also file a github issue at the end of gsoc that formally tracks pbr materialProfile extensions so the conversation happens in the right place.
-
-i want to confirm with **dave** ([@davepagurek](https://github.com/davepagurek)) that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
-
-the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
 
 
 ***
