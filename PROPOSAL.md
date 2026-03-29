@@ -701,3 +701,23 @@ what i will do instead is design the materialProfile object to be extensible fro
 i want to confirm with **dave** ([@davepagurek](https://github.com/davepagurek)) that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
 
 the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
+
+
+***
+
+# Section 6: Practicalities
+
+**eligibility**
+
+i have read the GSoC Rules 7.1 carefully and confirm that i am eligible to participate as a GSoC contributor.
+
+**AI disclosure**
+
+AI tools were used in this proposal for formatting assistance and English grammar corrections only. all technical research, source code reading, architecture decisions, proof of concept, and pull request code are entirely my own work.
+
+**availability**
+
+GSoC is my primary focus this summer. i am available all days of the week, from 4:00 PM IST to 11:00 PM IST (10:30 AM UTC to 5:30 PM UTC). i am happy to adjust within that window to accommodate mentor schedules across time zones.
+
+i am comfortable with both written communication and audio or video calls. no strong preference either way — whatever works best for the mentors.
+
