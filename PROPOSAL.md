@@ -68,7 +68,7 @@ the proposal you are reading is not the first version. it went through real iter
 
 when i first shared a prototype sketch with **kit** ([@ksen0](https://github.com/ksen0)), she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** ([@ksen0](https://github.com/ksen0)) identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
 
-**diya** ([@diyaayay](https://github.com/diyaayay)) has been here before. in 2022 she opened pr #7176, her own attempt at this exact feature, proposing a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **dave** ([@davepagurek](https://github.com/davepagurek)) closed it with: *"the direction is right but needs more design work."* she is now mentoring this proposal rather than building it herself  - this is community continuity, not a fresh start. and in issue #6670, **dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is the answer to that sentence. it has been waiting to be built for three years.
+in 2022, **diya** ([@diyaayay](https://github.com/diyaayay)) opened pr #7176, exploring this exact feature space with a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **dave** ([@davepagurek](https://github.com/davepagurek)) noted: *"the direction is right but needs more design work."* that earlier exploration informed the architecture of this proposal directly. **diya**'s choice to mentor this proposal reflects genuine continuity in the community's investment in this problem. and in issue #6670, **dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is a direct response to that design question, which has remained open since 2022.
 
 when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the approach for this proposal, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
@@ -82,7 +82,7 @@ beyond the mentors, the community has independently reported this same failure r
 
 ### 2.5 previous attempts and why they stalled
 
-this is not a new problem and this is not the first attempt to fix it. three contributors tried before this proposal. all three identified the right problem. none had a complete architecture. `_materialSlices` resolves the design question that stopped all three.
+this is not a new problem, and this proposal builds on prior exploration. three contributors investigated this before and each identified the right problem area. each attempt contributed to the understanding of what a complete architecture needs to look like. `_materialSlices` is an attempt to answer the design question that each of those efforts raised.
 
 | pr | author | year | what it tried | why it stalled |
 |---|---|---|---|---|
@@ -90,7 +90,7 @@ this is not a new problem and this is not the first attempt to fix it. three con
 | [#7072](https://github.com/processing/p5.js/pull/7072) | rohanjulka19 | 2022 | per-material texture mappings stored in `p5.Geometry`, index buffer re-rendered per texture | **dave** raised class design concerns about splitting `p5.Geometry`  - stalled open |
 | [#8675](https://github.com/processing/p5.js/pull/8675) | aakritithecoder | 2024 | `map_Ka`, `map_Ks`, `map_Bump` parsing added to `parseMtl()` | closed by **kit** for missing tests and wrong branch  - no architecture |
 
-the common thread: every attempt stalled at the same blocker **dave** named in [issue #6670](https://github.com/processing/p5.js/issues/6670) in 2022  - *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* none of the three PRs had a complete answer to that design question. `_materialSlices` does.
+the common thread: every attempt ran into the same design question **dave** named in [issue #6670](https://github.com/processing/p5.js/issues/6670) in 2022  - *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is this proposal's answer to that question.
 
 ### 2.4 my existing contribution
 
@@ -101,7 +101,7 @@ i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lin
 
 the diagram below shows where the data is lost. the obj file has all the material information including the usemtl boundaries, the map_Kd texture paths, the Kd colour values. parseMtl() reads them correctly. but parseObj() discards all the structure and dumps everything into one flat vertex array. by the time the data reaches the renderer, the material boundaries are completely gone and gl.drawElements() has nothing to work with except one flat blob.
 
-this architectural limitation is on record. in [issue #6117](https://github.com/processing/p5.js/issues/6117), a community member asked directly why mtl files were being ignored. **dave** ([@davepagurek](https://github.com/davepagurek)) explained: `loadModel()` has no data structure capable of representing shape and materials as separate entities. that explanation is from 2022. this proposal is the fix.
+this architectural limitation is on record. in [issue #6117](https://github.com/processing/p5.js/issues/6117), a community member asked directly why mtl files were being ignored. **dave** ([@davepagurek](https://github.com/davepagurek)) explained: `loadModel()` has no data structure capable of representing shape and materials as separate entities. that explanation is from 2022. this proposal is an attempt to address it directly.
 
 <p align="center"><img width="697" height="654" alt="Screenshot 2026-03-22 at 4 00 34 PM" src="https://github.com/user-attachments/assets/e00c878e-492b-4ef1-96b7-7e02fa45a968" /></p>
 
