@@ -443,7 +443,9 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) | week 1-2 | 40h | 5h |
 | Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
 | Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
+| community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
 | Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
+| community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
 | Phase 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
 | Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
 | Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
@@ -511,6 +513,8 @@ the specific gatekeeper this project removes:
 6. user gives up and abandons the 3d direction entirely
 
 after this project: step 3 renders correctly. steps 4, 5, and 6 do not happen. **the creative coding on-ramp stays open**.
+
+an educator can now assign any sketchfab model as a starting point without pre-processing. a student opens the p5.js web editor, loads the model, and sees the jacket the right colour and the skin the right tone on the first run - exactly as the artist exported it from blender. no blender install, no bake textures step, no silent failure. that is what this project actually delivers.
 
 
 ## 10. why i chose this project and what i bring to it
