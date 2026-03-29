@@ -4,7 +4,7 @@
 
 **project size:** 300 hours
 
-**mentors:** diya solanki & claudine chen
+**mentors:** **diya** solanki & **claudine** chen
 
 
 ## 1. synopsis
@@ -29,7 +29,7 @@ this is directly in line with p5.js's core value: reduce cognitive load, maximis
 
 ## 2. background and what i already know
 
-### 2.1 the existing implementation (pr #6710, merged by diya and dave)
+### 2.1 the existing implementation (pr #6710, merged by **diya** and **dave**)
 
 i read through the entire pr #6710 (.mtl color support, merged 2024) to understand where the current code sits:
 
@@ -58,21 +58,21 @@ key findings:
 - `beginGeometry()` and `endGeometry()` are not exposed as public user-facing functions in dev-2.0. they exist as internal renderer methods but there is no `fn.beginGeometry` or `fn.endGeometry`. the user-facing replacement is `buildGeometry(callback)`, which calls them internally. i built my entire poc using this api to ensure the proposal aligns with the new 2.0 architecture.
 - `_materialSlices`, `materialGroups`, `subGeometries`, none of these exist on `Geometry`. this is the gap to fill.
 - `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
-- dave's comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
+- **dave**'s comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
 
 ### 2.3 how mentor feedback shaped this proposal
 
 the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback and that process is worth documenting because it changed the architecture.
 
-when i first shared a prototype sketch with kit, she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking.
+when i first shared a prototype sketch with **kit**, she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking.
 
-when i asked diya about the approach, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
+when i asked **diya** about the approach, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
-dave confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
+**dave** confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
 
-diya also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
+**diya** also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
 
-connie mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
+**connie** mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
 
 ### 2.4 my existing contribution
 
@@ -88,7 +88,7 @@ the diagram below shows where the data is lost. the obj file has all the materia
 
 ## 4. my approach and the three options i considered
 
-when i first approached this problem i identified three possible architectural solutions. diya's directive and dave's api feedback helped me narrow to the right one.
+when i first approached this problem i identified three possible architectural solutions. **diya**'s directive and **dave**'s api feedback helped me narrow to the right one.
 
 ### option a: new public p5.GeometryGroup class (rejected)
 
@@ -106,7 +106,7 @@ let geom = loadModel('robot.obj'); // still returns p5.Geometry
 model(geom);                       // works for 1 or 12 materials, same call
 ```
 
-diya's feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with dave's parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
+**diya**'s feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with **dave**'s parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
 
 ### option b: public geometry.materialGroups property (rejected)
 
@@ -122,8 +122,8 @@ why this is correct:
 
 - zero breaking changes. `loadModel()` still returns `p5.Geometry`, `model()` signature unchanged
 - follows p5.js convention: private fields use `_` prefix (`_hasFillTransparency`, `_hasStrokeTransparency`, etc.)
-- aligns with diya's directive to keep grouping logic internal
-- satisfies dave's api parity: `model(singleMaterialGeom)` and `model(multiMaterialGeom)` are the same call
+- aligns with **diya**'s directive to keep grouping logic internal
+- satisfies **dave**'s api parity: `model(singleMaterialGeom)` and `model(multiMaterialGeom)` are the same call
 - the fallback path (no `_materialSlices`) is the existing code with no modification
 - closest to how processing4 handles it: `PShapeOBJ` builds an array of `PShape` children internally. each child holds one material group's geometry. the user-facing draw call (`shape(s)`) loops through those children automatically so the user never sees the internal structure. this is the exact pattern i am proposing for p5.js: `_materialSlices` as private internal children, `model()` looping through them, user api completely unchanged. the fact that processing, the parent project, already solved this the same way is strong evidence the pattern is correct.
 
@@ -282,9 +282,9 @@ the per-slice gpu buffer caching works as follows: each slice's sub-geometry is 
 
 when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` - the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
 
-### 5.4 buildGeometry() integration (dave's suggestion)
+### 5.4 buildGeometry() integration (**dave**'s suggestion)
 
-dave noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
+**dave** noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
 
 in phase 5 of the project, i will extend `buildGeometry()` so that if a user calls `texture()` or `specularMaterial()` mid-draw, a new slice boundary is automatically created:
 
@@ -438,7 +438,7 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 
 | phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
-| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from diya, claudine | week 1-2 | 40h | 5h |
+| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya**, **claudine** | week 1-2 | 40h | 5h |
 | Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
 | Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
 | Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
@@ -483,7 +483,7 @@ function draw() {
 
 ## 9. accessibility angle
 
-p5.js's mission is access and inclusion. kit made this explicit in the session: "all new proposals should make the argument of how the new feature improves access and inclusion." this project has a direct and concrete answer to that.
+p5.js's mission is access and inclusion. **kit** made this explicit in the session: "all new proposals should make the argument of how the new feature improves access and inclusion." this project has a direct and concrete answer to that.
 
 sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
 
@@ -528,9 +528,9 @@ that is 15 prs across the core library, the webgl renderer, and the editor. i ha
 
 **other technical background:**
 - full pipeline trace: `loadModel()` to `parseMtl()`, `parseObj()`, `p5.Geometry`, `Renderer3D.model()`, `_drawBuffers()`, `gl.drawElements()`, all read in source not docs
-- referenced pr #6710 (original mtl implementation by diya and dave), issue #6924 (formal feature request tracking what is missing), processing4's `PShapeOBJ.java` (reference implementation for the internal children pattern)
+- referenced pr #6710 (original mtl implementation by **diya** and **dave**), issue #6924 (formal feature request tracking what is missing), processing4's `PShapeOBJ.java` (reference implementation for the internal children pattern)
 - working poc built on dev-2.0 apis (`buildGeometry()`) before writing this proposal, not after
-- direct conversations with diya, dave, and kit that shaped the architecture documented in sections 2.3 and 4
+- direct conversations with **diya**, **dave**, and **kit** that shaped the architecture documented in sections 2.3 and 4
 
 
 ## 11. architectural decisions for the community bonding period
@@ -547,13 +547,13 @@ option b: document that artists should order transparent faces last in their obj
 
 option c: expose a `loadModel('file.obj', { sortTransparent: true })` option for users who need it.
 
-my current position is option b for v1, because it adds zero complexity, it matches what artists already do in blender and maya, and option c can follow as a documented enhancement. i want to confirm with diya and claudine that this matches how the team thinks about v1 scope before committing.
+my current position is option b for v1, because it adds zero complexity, it matches what artists already do in blender and maya, and option c can follow as a documented enhancement. i want to confirm with **diya** and **claudine** that this matches how the team thinks about v1 scope before committing.
 
 **decision 2: buildGeometry() material boundary detection**
 
 should mid-draw material state changes automatically create a new slice (always-on), or should this be an opt-in flag?
 
-i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past dave since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands - phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
+i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past **dave** since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands - phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
 
 **decision 3: texture loading, eager vs lazy**
 
@@ -567,14 +567,14 @@ should `_materialSlices` use the `_` prefix convention (as most private fields i
 
 i checked the codebase and the `_` convention is overwhelmingly dominant. `#` private fields appear in almost none of the existing code. my preference is to match the existing convention and use `_materialSlices` for consistency, but i will follow whatever the team decides here since it is a style question not a technical one.
 
-**decision 5: pbr properties like metalness (dave's point)**
+**decision 5: pbr properties like metalness (**dave**'s point)**
 
-dave specifically mentioned metalness alongside specularMaterial and textures as things that could not currently be swapped inside one geometry. the classic mtl format does not have a metalness field at all, it predates pbr pipelines entirely. so this raises a real question: should the materialProfile schema be extended to support pbr properties beyond what the mtl spec defines?
+**dave** specifically mentioned metalness alongside specularMaterial and textures as things that could not currently be swapped inside one geometry. the classic mtl format does not have a metalness field at all, it predates pbr pipelines entirely. so this raises a real question: should the materialProfile schema be extended to support pbr properties beyond what the mtl spec defines?
 
 my position is to not include metalness in this gsoc project, and here is why i came to that conclusion. the mtl format covers `Kd`, `Ks`, `Ka`, `Ns`, `d`, `map_Kd`, `map_Ks`, `map_Bump` and a handful of others. that is already a full project's worth of work to parse, load, and bind correctly. metalness in the pbr sense comes from gltf and other modern formats which have a completely different pipeline. trying to bolt it onto the mtl materialProfile now would mean designing a schema that serves two different file format families at once, which is the kind of thing that produces awkward apis.
 
 what i will do instead is design the materialProfile object to be extensible from the start. the schema is a plain javascript object, so adding `metalness: null` as a field in a follow-on pr is trivial once someone decides what source format should populate it. i will also file a github issue at the end of gsoc that formally tracks pbr materialProfile extensions so the conversation happens in the right place.
 
-i want to confirm with dave that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
+i want to confirm with **dave** that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
 
 the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
