@@ -815,6 +815,8 @@ Between checkpoints, I will stay active in the p5.js Discord #webgl channel and 
 | 20 | Phase 8 | Performance benchmark complete (12-slice model across Chrome, Firefox, Safari), 5 follow-up GitHub issues filed with full context | Final PR polished and code review feedback addressed |
 | 21-22 | Overflow | Absorb any slippage from earlier phases without risk to final deliverables | If on schedule: better error messages for missing `map_Kd`, additional real-model fixtures, or PBR property stubs on `materialProfile` |
 
+Weeks 21 and 22 are the final two weeks of the 22-week GSoC window. No new work is scheduled here. If a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. If all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
+
 
 
 ***
