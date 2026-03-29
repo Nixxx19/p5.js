@@ -424,21 +424,7 @@ this is detected internally by diffing material state in `GeometryBuilder`. this
 
 since this touches the behaviour of an existing api, i will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
 
-### 3.4.6 error handling & failure modes
-
-three failure modes and how the implementation handles each:
-
-**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path - same behaviour as today, **zero regression**.
-
-**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path - **unlike today where this failure is completely silent**.
-
-**partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. **no slice's failure affects any other slice**.
-
-the diagram below shows all three layers together: parser, data, and renderer, and how they connect. the parser produces the slices, the data layer holds them privately on the geometry object, and the renderer loops through them at draw time. each layer is independently testable and the public api never changes.
-
-<p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
-
-### 3.4.7 Phase 6 — visual tests, unit tests, fixture files
+### 3.4.6 Phase 6 — visual tests, unit tests, fixture files
 
 testing a 3d renderer is fundamentally different from testing logic code. the output is pixels produced by a gpu, and gpu output can vary slightly across machines and drivers. p5.js handles this with a screenshot comparison approach that renders a sketch headlessly and diffs pixels against a stored reference image within a configurable tolerance. phase 6 delivers three categories of tests.
 
@@ -482,7 +468,7 @@ the test suite requires small, deterministic fixture files committed to `test/un
 
 the two-material fixture is hand-authored to be minimal and deterministic. the 12-material fixture is exported from blender to represent a real-world workflow. all fixture files are committed as plain text and kept under 50kb total.
 
-### 3.4.8 Phase 7 — documentation
+### 3.4.7 Phase 7 — documentation
 
 p5.js documentation is generated from inline jsdoc comments in the source files. the reference pages at p5js.org are built directly from these comments, so jsdoc changes are not cosmetic — they change what users read when they look up a function.
 
@@ -514,7 +500,7 @@ after phase 5, `buildGeometry()` can capture material boundaries automatically w
 
 each reference page in p5.js includes a live runnable example embedded in the page. i will write examples for all three functions that can be run directly in the p5.js web editor. the examples will use publicly hosted texture images so they work without any local file setup. the `loadModel()` example will load a real multi-material model hosted at a stable url and demonstrate the before/after difference in a single sketch.
 
-### 3.4.9 Phase 8 — api parity audit, edge cases, performance & follow-up issues
+### 3.4.8 Phase 8 — api parity audit, edge cases, performance & follow-up issues
 
 phase 8 is not a cleanup phase. it is a deliberate audit pass that treats the implementation as a black box and systematically tests every assumption made during development. it is also where the project formally hands off unfinished work to the wider community through github issues.
 
@@ -559,6 +545,20 @@ before gsoc ends, i will file the following github issues to formally track work
 | gltf format support | gltf is the modern replacement for obj/mtl, with built-in pbr materials. a separate `loadModel()` code path for `.gltf` files would reuse the `_materialSlices` architecture established by this project. |
 
 each issue will include a link back to the relevant section of this proposal so future contributors have full context on the design decisions already made.
+
+### 3.4.9 error handling & failure modes
+
+three failure modes and how the implementation handles each:
+
+**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path - same behaviour as today, **zero regression**.
+
+**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path - **unlike today where this failure is completely silent**.
+
+**partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. **no slice's failure affects any other slice**.
+
+the diagram below shows all three layers together: parser, data, and renderer, and how they connect. the parser produces the slices, the data layer holds them privately on the geometry object, and the renderer loops through them at draw time. each layer is independently testable and the public api never changes.
+
+<p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
 
 ## 3.5 proof of concept
 
@@ -763,15 +763,15 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
 | Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) → §3.4.1 | week 1-2 | 40h | 5h |
-| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2 | week 3-5 | 35h | 5h |
-| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.4, §3.4.6 | week 6-8 | 55h | 15h |
+| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.9 | week 3-5 | 35h | 5h |
+| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.3, §3.4.9 | week 6-8 | 55h | 15h |
 | community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
-| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.6 | week 9-11 | 50h | 15h |
+| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.9 | week 9-11 | 50h | 15h |
 | community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
 | Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | week 12-13 | 35h | 5h |
-| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.7 | week 14-16 | 40h | 5h |
-| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.8 | week 17-18 | 25h | 5h |
-| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features → §3.4.9 | week 19-20 | 20h | 5h |
+| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.6 | week 14-16 | 40h | 5h |
+| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.7 | week 17-18 | 25h | 5h |
+| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features → §3.4.8 | week 19-20 | 20h | 5h |
 | **core total** | | **week 1-20** | **300h** | **60h** |
 | overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
 | **gsoc total** | | **22 weeks** | **300h** | - |
