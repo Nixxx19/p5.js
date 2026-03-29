@@ -65,6 +65,10 @@ the contribution i am most proud of is PR #8666 on p5.js dev-2.0. while doing th
 
 what i learned is that the best way to understand a codebase is to read it with the intention of using it, not just studying it. i was not hunting for bugs. i was following data through a pipeline. the bug appeared because i was paying attention, not because i was looking for it.
 
+beyond code, i try to stay genuinely present in the community. when i filed [issue #8219](https://github.com/processing/p5.js/issues/8219) about the browser freeze for geometry over 65k vertices, i did not just report and leave. i had a back-and-forth with **dave** ([@davepagurek](https://github.com/davepagurek)) investigating whether libtess was hitting a hard index limit or simply slowing down on complex intersecting shapes, before eventually opening the fix. i have also filed several issues on the p5.js web editor after spotting security vulnerabilities and rough edges while contributing there. i think that kind of investigation work, digging into why something breaks and not just that it does, is where i naturally end up.
+
+i am pretty hands-on when someone around me is stuck. i remember a friend trying to contribute to an open source project for the first time who kept hitting walls on the setup. i walked him through it step by step. watching it click for him felt more satisfying than most code i have shipped. that is part of why i filed [issue #3999](https://github.com/processing/p5.js-web-editor/issues/3999) on the web editor when i noticed the installation documentation was unclear about when to use Docker versus manual setup. someone else would have hit that same wall. fixing the documentation is the same instinct as helping the friend.
+
 **2. a p5.js sketch i made that i am most satisfied with**
 
 [Raymarched Anomaly Sketch](https://editor.p5js.org/nityamt199/sketches/N7Wov74qW)
