@@ -1,6 +1,6 @@
 # gsoc 2026 proposal
 ## full texture support for .mtl files in p5.js
-**applicant:** nityam (github: nixxx19)
+**applicant:** **Nityam** ([@Nixxx19](https://github.com/Nixxx19))
 
 **project size:** 300 hours
 
