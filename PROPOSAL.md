@@ -728,7 +728,7 @@ this is not a new problem, and this proposal builds on prior exploration. three 
 
 | pr | author | year | what it tried | why it stalled |
 |---|---|---|---|---|
-| [#7176](https://github.com/processing/p5.js/pull/7176) | **diya** | 2022 | `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state | **dave**: *"direction is right but needs more design work"*  - closed |
+| [#7176](https://github.com/processing/p5.js/pull/7176) | diya | 2022 | `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state | **dave**: *"direction is right but needs more design work"*  - closed |
 | [#7072](https://github.com/processing/p5.js/pull/7072) | rohanjulka19 | 2022 | per-material texture mappings stored in `p5.Geometry`, index buffer re-rendered per texture | **dave** raised class design concerns about splitting `p5.Geometry`  - stalled open |
 | [#8675](https://github.com/processing/p5.js/pull/8675) | aakritithecoder | 2024 | `map_Ka`, `map_Ks`, `map_Bump` parsing added to `parseMtl()` | closed by **kit** for missing tests and wrong branch  - no architecture |
 
