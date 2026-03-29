@@ -22,19 +22,19 @@
 
 **Pronouns:** he/him
 
-## Short bio
+## 1.1 Short bio
 
 i am a third-year computer science engineering student at Thapar University, Patiala. i am a systems-oriented developer and most of my work sits in Rust, TypeScript, and distributed systems, spanning multi-agent decision engines, CI/CD infrastructure, and real-time API services. i read research before i write code and i treat every codebase i work in like a production system.
 
 alongside this, i take an elective in gaming and animation where i work with Blender, modelling and texturing characters for real pipelines. that elective pulled me into JavaScript and WebGL based creative coding tools, and i have been working with p5.js long enough to know its internals well. that combination of low-level systems thinking and hands-on 3D and creative coding work is what shapes how i approach problems.
 
-## Project abstract
+## 1.2 Project abstract
 
 p5.js currently flattens all geometry from a 3D model into one shape and renders it with a single texture. every model exported from blender, maya, sketchfab, or tinkercad with more than one material comes out as a flat grey blob with no error and no warning. the user did everything right. the library silently threw away the material information at parse time.
 
 this project fixes that at the root. it rewrites the obj parser to preserve material boundaries, introduces a lightweight private data structure to carry per-material geometry and texture information, and extends the renderer to loop through each material group and draw it correctly. the result is that a fully textured multi-material model loads and renders as the artist intended. the user calls loadModel() exactly as before. nothing in the public api changes. every model that currently renders broken renders correctly.
 
-## Interests & skills
+## 1.3 Interests & skills
 
 **what i find most interesting about this project**
 
@@ -121,7 +121,7 @@ ultimately, an open source project is accessible when it is as intuitive to use 
 
 # Section 3: Proposed Work
 
-## 1. synopsis
+## 3.1 synopsis
 
 when a beginner downloads a 3d model from sketchfab, exports one from blender, maya, or tinkercad, and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
 
@@ -130,7 +130,7 @@ the difference is not subtle:
 | before (p5.js today) | after (this project) |
 |---|---|
 | <p align="center"><img src="https://github.com/user-attachments/assets/c9649c7f-2f96-4213-a6ad-08f7132688f9" /></p> | <p align="center"><img src="https://github.com/user-attachments/assets/b283bc81-e1ee-4c68-8add-6d052804121f" /></p> |
-| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. *(geometry assembled via `buildGeometry()` to simulate what the parser will produce - loading real `.obj`/`.mtl` files is detailed in section 5.2)* |
+| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. *(geometry assembled via `buildGeometry()` to simulate what the parser will produce - loading real `.obj`/`.mtl` files is detailed in section 3.4.2)* |
 
 both sketches use the exact same geometry and the exact same `model()` call. the only difference is whether the renderer knows how to loop through material slices.
 
@@ -141,7 +141,7 @@ this project removes that wall **without changing a single line of user code**. 
 this is directly in line with p5.js's core value: reduce cognitive load, maximise access. a beginner should not have to open blender, learn uv-baking, or understand what a `uSampler` is. they should just be able to use art.
 
 
-## 3. the problem, stated precisely
+## 3.2 the problem, stated precisely
 
 the diagram below shows where the data is lost. the obj file has all the material information including the usemtl boundaries, the map_Kd texture paths, the Kd colour values. parseMtl() reads them correctly. but parseObj() discards all the structure and dumps everything into one flat vertex array. by the time the data reaches the renderer, the material boundaries are completely gone and gl.drawElements() has nothing to work with except one flat blob.
 
@@ -150,11 +150,11 @@ this architectural limitation is on record. in [issue #6117](https://github.com/
 <p align="center"><img width="697" height="654" alt="Screenshot 2026-03-22 at 4 00 34 PM" src="https://github.com/user-attachments/assets/e00c878e-492b-4ef1-96b7-7e02fa45a968" /></p>
 
 
-## 4. my approach and the three options i considered
+## 3.3 my approach and the three options i considered
 
 when i first approached this problem i identified three possible architectural solutions. **diya** ([@diyaayay](https://github.com/diyaayay))'s directive and **dave** ([@davepagurek](https://github.com/davepagurek))'s api feedback helped me narrow to the right one.
 
-### option a: new public p5.GeometryGroup class (rejected)
+### 3.3.1 option a: new public p5.GeometryGroup class (rejected)
 
 create a new class that wraps an array of `p5.Geometry` objects. `loadModel()` returns a `p5.GeometryGroup` when it detects multiple materials. overload `model()` to accept either type.
 
@@ -172,13 +172,13 @@ model(geom);                       // works for 1 or 12 materials, same call
 
 **diya** ([@diyaayay](https://github.com/diyaayay))'s feedback was explicit: "i'd generally lean toward keeping the grouping logic internal to the existing geometry pipeline unless a separate abstraction clearly improves maintainability. we would generally want to avoid breaking changes, since those are typically reserved for major releases." it also conflicts with **dave** ([@davepagurek](https://github.com/davepagurek))'s parity requirement since users should not have to call a different function for a multi-material model versus a single-material one.
 
-### option b: public geometry.materialGroups property (rejected)
+### 3.3.2 option b: public geometry.materialGroups property (rejected)
 
 add a public `materialGroups: Array` field to `p5.Geometry`. the renderer checks for it.
 
 why i rejected it: pollutes the public geometry api. since p5.js documentation is generated from inline comments, a new public property would appear in the reference and create documentation debt. users could also accidentally break their sketch by reading or mutating `materialGroups` without understanding the consequences.
 
-### option c: private _materialSlices on p5.Geometry (chosen)
+### 3.3.3 option c: private _materialSlices on p5.Geometry (chosen)
 
 attach a private `_materialSlices` array to the geometry object returned by `loadModel()`. each entry is `{ geometry: p5.Geometry, materialProfile: {...} }`. the renderer checks for this private property. **the public geometry api is completely unchanged**.
 
@@ -198,9 +198,9 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 
 
 
-## 5. technical architecture
+## 3.4 technical architecture
 
-### 5.1 data structure
+### 3.4.1 data structure
 
 ```javascript
 // what loadModel() returns (p5.Geometry, unchanged public api)
@@ -238,7 +238,7 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 
 `map_Kd` is the only map bound to the shader in v1 - the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
 
-### 5.2 parser changes (loading.js)
+### 3.4.2 parser changes (loading.js)
 
 **parseMtl() extended:**
 ```
@@ -277,7 +277,7 @@ draw order: slices are inserted in obj file order, which matches the artist's 3d
 
 `hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
 
-### 5.3 renderer changes (p5.Renderer3D.js)
+### 3.4.3 renderer changes (p5.Renderer3D.js)
 
 the existing `model()` method in `Renderer3D`:
 ```javascript
@@ -346,7 +346,7 @@ the per-slice gpu buffer caching works as follows: each slice's sub-geometry is 
 
 when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` - the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
 
-### 5.4 buildGeometry() integration (**dave** ([@davepagurek](https://github.com/davepagurek))'s suggestion)
+### 3.4.4 buildGeometry() integration (**dave** ([@davepagurek](https://github.com/davepagurek))'s suggestion)
 
 **dave** ([@davepagurek](https://github.com/davepagurek)) noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
 
@@ -368,7 +368,7 @@ this is detected internally by diffing material state in `GeometryBuilder`. this
 
 since this touches the behaviour of an existing api, i will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
 
-### 5.5 texture loading, eager vs lazy
+### 3.4.5 texture loading, eager vs lazy
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
@@ -380,7 +380,7 @@ i propose eager loading for this project. lazy loading can be a follow-up optimi
 
 the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
-### 5.6 error handling
+### 3.4.6 error handling
 
 three failure modes and how the implementation handles each:
 
@@ -395,7 +395,7 @@ the diagram below shows all three layers together: parser, data, and renderer, a
 <p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
 
 
-## 6. proof of concept
+## 3.5 proof of concept
 
 i built a working poc to validate all three layers of this architecture before writing this proposal. you can run it here:
 
@@ -491,43 +491,7 @@ the poc renders 12 separate material slices (shirt, jacket, head, eyes, irises, 
 the poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. it answers the question "do the layers work together?" - the parser, data layer, and renderer all behave as the proposal describes. the implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
 
 
-***
-
-# Section 4: Timeline
-
-## 7. scope and why this is 300 hours
-
-the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
-
-1. the parser rewrite is non-trivial. vertex deduplication, uv mapping, and face winding all need to work correctly per-slice.
-2. visual tests for 3d rendering are significantly more complex than unit tests.
-3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
-4. the `buildGeometry()` integration (phase 5) is an extra deliverable not in the original spec.
-
-| phase | work | weeks | hours | buffer (hrs) |
-|---|---|---|---|---|
-| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) | week 1-2 | 40h | 5h |
-| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
-| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
-| community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
-| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
-| community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
-| Phase 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
-| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
-| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
-| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
-| **core total** | | **week 1-20** | **300h** | **60h** |
-| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
-| **gsoc total** | | **22 weeks** | **300h** | - |
-
-the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
-
-phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. **the core deliverables (parser, data layer, renderer) are never at risk**.
-
-weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
-
-
-## 8. expected outcomes
+## 3.6 expected outcomes
 
 by the end of gsoc:
 
@@ -551,7 +515,7 @@ function draw() {
 ```
 
 
-## 9. accessibility angle
+## 3.7 accessibility angle
 
 p5.js's mission is access and inclusion. **kit** ([@ksen0](https://github.com/ksen0)) made this explicit in the session: "all new proposals should make the argument of how the new feature improves access and inclusion." this project has a direct and concrete answer to that.
 
@@ -585,7 +549,7 @@ an educator can now assign any sketchfab model as a starting point without pre-p
 this failure is independently documented by users who have no connection to each other. in [this discourse thread from 2019](https://discourse.processing.org/t/load-obj-model-with-mtl-file-and-jpg-texture/4634), multiple users reported that `loadModel()` loads the mesh but ignores the texture entirely  - the only workaround discovered was to manually `loadImage()` and flip the texture vertically via `createGraphics`. in [this thread](https://discourse.processing.org/t/how-can-i-color-or-texture-each-faces-of-a-loaded-obj-file/12688), a user asked specifically how to colour each face of a loaded obj file  - the answer was that there is no native solution. same wall, different years, different people. the fix never came because it required an architectural change, not a patch.
 
 
-## 10. why i chose this project and what i bring to it
+## 3.8 why i chose this project and what i bring to it
 
 i take an elective in gaming and animation as part of my coursework. that course lives in blender. we model things, rig them, texture them, and export them. i got used to working with multi-material meshes where the jacket is one material, the skin is another, the shoes are another, and blender keeps them all separate because that is how you actually build things. when i started bringing those models into p5.js for creative coding projects, i hit the wall immediately. the same character i had spent hours texturing in blender came out as a single flat grey blob. no error. nothing. i genuinely thought i was exporting wrong. i tried different export settings, re-checked my uv maps, re-exported with different obj options, checked the file in a different viewer to confirm the textures were actually there. they were. i then opened the obj file in a text editor and saw all the `usemtl` groups exactly where they should be. the `map_Kd` paths were in the mtl file. everything was correct. that was when i opened `loading.js` directly and traced what `parseObj()` actually does with a `usemtl` token. i found it reads the material name, looks it up, bakes just the `Kd` colour into `vertexColors`, and then discards the boundary entirely. the texture path is stored by `parseMtl()` but never handed to the renderer. that single read told me exactly what was broken and exactly where.
 
@@ -614,10 +578,47 @@ that is 15 prs across the core library, the webgl renderer, and the editor. i ha
 - full pipeline trace: `loadModel()` to `parseMtl()`, `parseObj()`, `p5.Geometry`, `Renderer3D.model()`, `_drawBuffers()`, `gl.drawElements()`, all read in source not docs
 - referenced pr #6710 (original mtl implementation by **diya** ([@diyaayay](https://github.com/diyaayay)) and **dave** ([@davepagurek](https://github.com/davepagurek))), issue #6924 (formal feature request tracking what is missing), processing4's `PShapeOBJ.java` (reference implementation for the internal children pattern)
 - working poc built on dev-2.0 apis (`buildGeometry()`) before writing this proposal, not after
-- direct conversations with **diya** ([@diyaayay](https://github.com/diyaayay)), **dave** ([@davepagurek](https://github.com/davepagurek)), and **kit** ([@ksen0](https://github.com/ksen0)) that shaped the architecture documented in sections 2.3 and 4
+- direct conversations with **diya** ([@diyaayay](https://github.com/diyaayay)), **dave** ([@davepagurek](https://github.com/davepagurek)), and **kit** ([@ksen0](https://github.com/ksen0)) that shaped the architecture documented in sections 5.1.3 and 3.3
 
 
-## 11. architectural decisions for the community bonding period
+
+***
+
+# Section 4: Timeline
+
+## 4.1 scope and why this is 300 hours
+
+the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
+
+1. the parser rewrite is non-trivial. vertex deduplication, uv mapping, and face winding all need to work correctly per-slice.
+2. visual tests for 3d rendering are significantly more complex than unit tests.
+3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
+4. the `buildGeometry()` integration (phase 5) is an extra deliverable not in the original spec.
+
+| phase | work | weeks | hours | buffer (hrs) |
+|---|---|---|---|---|
+| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) | week 1-2 | 40h | 5h |
+| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
+| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
+| community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
+| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
+| community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
+| Phase 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
+| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
+| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
+| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
+| **core total** | | **week 1-20** | **300h** | **60h** |
+| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
+| **gsoc total** | | **22 weeks** | **300h** | - |
+
+the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
+
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. **the core deliverables (parser, data layer, renderer) are never at risk**.
+
+weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
+
+
+## 4.2 architectural decisions for the community bonding period
 
 i have researched each of these thoroughly and have a clear position on each one. each decision touches the public api or shader pipeline and should have explicit sign-off from the team before i write production code. i want to align early rather than surface surprises at pr review.
 
@@ -669,9 +670,9 @@ the architecture described in this proposal is my strongest current recommendati
 # Section 5: Research
 
 
-## 2. background and what i already know
+## 5.1 background and what i already know
 
-### 2.1 the existing implementation (pr #6710, merged by **diya** ([@diyaayay](https://github.com/diyaayay)) and **dave** ([@davepagurek](https://github.com/davepagurek)))
+### 5.1.1 the existing implementation (pr #6710, merged by **diya** ([@diyaayay](https://github.com/diyaayay)) and **dave** ([@davepagurek](https://github.com/davepagurek)))
 
 i read through the entire pr #6710 (.mtl color support, merged 2024) to understand where the current code sits:
 
@@ -684,7 +685,7 @@ issue #6924 (filed by sableraf) formally tracks what's missing. this project res
 
 the collapsing approach introduced by #6710 had immediate side effects  - pr #6921 was filed and fixed within the same release cycle because vertex deduplication was destroying texture coordinates for models where vertices are shared across faces. davepagurek's fix in pr #6923 explicitly documents how the single-array design makes per-material texture assignment structurally impossible. the architecture that caused #6921 is the same architecture this project replaces.
 
-### 2.2 what i found in the dev-2.0 codebase
+### 5.1.2 what i found in the dev-2.0 codebase
 
 i studied the following files directly in the `dev-2.0` branch:
 
@@ -704,7 +705,7 @@ key findings:
 - `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
 - **dave** ([@davepagurek](https://github.com/davepagurek))'s comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
 
-### 2.3 how mentor and community feedback shaped this proposal
+### 5.1.3 how mentor and community feedback shaped this proposal
 
 the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback, community-reported issues, and public discourse conversations, and that process is worth documenting because it changed the architecture.
 
@@ -714,15 +715,15 @@ in 2022, **diya** ([@diyaayay](https://github.com/diyaayay)) opened pr #7176, ex
 
 when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the approach for this proposal, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
-**dave** ([@davepagurek](https://github.com/davepagurek)) confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
+**dave** ([@davepagurek](https://github.com/davepagurek)) confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 3.3.
 
-**diya** ([@diyaayay](https://github.com/diyaayay)) also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
+**diya** ([@diyaayay](https://github.com/diyaayay)) also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 3.4.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
 
 **connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
 
 beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. **the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library**.
 
-### 2.5 previous attempts and why they stalled
+### 5.1.4 previous attempts and why they stalled
 
 this is not a new problem, and this proposal builds on prior exploration. three contributors investigated this before and each identified the right problem area. each attempt contributed to the understanding of what a complete architecture needs to look like. `_materialSlices` is an attempt to answer the design question that each of those efforts raised.
 
@@ -734,7 +735,7 @@ this is not a new problem, and this proposal builds on prior exploration. three 
 
 the common thread: every attempt ran into the same design question **dave** named in [issue #6670](https://github.com/processing/p5.js/issues/6670) in 2022  - *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is this proposal's answer to that question.
 
-### 2.4 my existing contribution
+### 5.1.5 my existing contribution
 
 i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. the `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. i found this bug while reading `parseObj()` specifically to understand the code i would be working on for this project. it was not a separate investigation, it came directly out of the deep read i did for the proposal. this is also why i know exactly where the slicer needs to be inserted in that function.
 
