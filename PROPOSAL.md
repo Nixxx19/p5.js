@@ -60,11 +60,11 @@ key findings:
 - `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
 - **dave**'s comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
 
-### 2.3 how mentor feedback shaped this proposal
+### 2.3 how mentor and community feedback shaped this proposal
 
-the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback and that process is worth documenting because it changed the architecture.
+the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback, community-reported issues, and public discourse conversations, and that process is worth documenting because it changed the architecture.
 
-when i first shared a prototype sketch with **kit**, she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking.
+when i first shared a prototype sketch with **kit**, she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
 
 when i asked **diya** about the approach, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
@@ -73,6 +73,8 @@ when i asked **diya** about the approach, she pushed back on any design that wou
 **diya** also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
 
 **connie** mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
+
+beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library.
 
 ### 2.4 my existing contribution
 
@@ -487,7 +489,17 @@ p5.js's mission is access and inclusion. **kit** made this explicit in the sessi
 
 sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
 
-the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. p5.js is being used in classrooms, creative coding workshops, and by artists who are not software engineers. educators who build 3d assignments around p5.js hit this wall every time a student tries to load a real model.
+the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. the failure is completely silent.
+
+who exactly gets blocked by this today:
+
+**students in 3d and animation courses.** this is my own situation. i take an elective where we model, rig, and texture characters in blender and then bring them into creative coding environments. every student in that class who tries to use p5.js hits the same wall. the character they spent hours texturing comes out grey and flat. p5.js is supposed to be the gentle on-ramp to creative coding. right now it is a dead end for anyone coming from a 3d background.
+
+**educators building 3d assignments.** a teacher who designs a unit around loading and animating a sketchfab model cannot know in advance that every model will break. the failure is silent and the fix (baking textures in blender) requires software the students do not have and a skill set that takes hundreds of hours to learn. the assignment has to be redesigned or abandoned.
+
+**artists and makers who are not software engineers.** p5.js is specifically designed for people who create, not people who debug rendering pipelines. an artist who downloads a model from sketchfab and calls `loadModel()` is doing exactly what the documentation says to do. the broken result looks like their fault. many of them conclude p5.js cannot do 3d and stop.
+
+**beginners on the p5.js web editor.** p5.js 2.0 becomes the default in the web editor in august 2026. every beginner who opens the editor after that date and tries 3d will hit this wall on day one, with no error message and no path forward.
 
 the specific gatekeeper this project removes:
 
@@ -498,7 +510,7 @@ the specific gatekeeper this project removes:
 5. blender has a learning curve of hundreds of hours and is not installed by default anywhere
 6. user gives up and abandons the 3d direction entirely
 
-after this project: step 3 renders correctly. steps 4, 5, 6 do not happen.
+after this project: step 3 renders correctly. steps 4, 5, and 6 do not happen. the creative coding on-ramp stays open.
 
 
 ## 10. why i chose this project and what i bring to it
