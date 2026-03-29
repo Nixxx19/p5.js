@@ -456,7 +456,7 @@ by the end of gsoc:
 - merged: extended `parseMtl()` that parses all standard mtl tokens
 - merged: new slicer in `parseObj()` producing `_materialSlices`
 - merged: extended `Renderer3D.model()` with multi-draw loop
-- merged: `buildGeometry()` material boundary detection
+- merged (if phase 5 not deferred): `buildGeometry()` material boundary detection
 - merged: visual tests with real multi-material obj fixtures
 - merged: full jsdoc and reference page examples
 - filed: github issues for remaining unimplemented mtl features so other contributors can continue
