@@ -294,11 +294,11 @@ proposed: Kd, Ka, Ks, Ns, d, illum + map_Kd, map_Ka, map_Ks, map_Bump, map_Ns
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
-eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. **textures are guaranteed ready before the first frame**. no complexity.
+**option a: eager loading (chosen):** all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. **textures are guaranteed ready before the first frame**. no complexity.
 
-lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
+**option b: lazy loading (not chosen):** load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
 
-i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
+i propose option a for this project. option b can be a follow-up optimisation with a cache.
 
 the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
