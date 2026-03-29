@@ -434,7 +434,7 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 1. the parser rewrite is non-trivial. vertex deduplication, uv mapping, and face winding all need to work correctly per-slice.
 2. visual tests for 3d rendering are significantly more complex than unit tests.
 3. after the feedback i received, i plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
-4. the `buildGeometry()` integration (phase 4) is an extra deliverable not in the original spec.
+4. the `buildGeometry()` integration (phase 5) is an extra deliverable not in the original spec.
 
 | phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
