@@ -246,6 +246,10 @@ I want to confirm with **Dave** ([@davepagurek](https://github.com/davepagurek))
 
 The architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. That said, I fully expect the implementation details to evolve once the wider team weighs in during pr review. That is a normal and healthy part of contributing to an open source project and I am ready to adapt as reviewers surface things I have not anticipated.
 
+#### The materialProfile schema
+
+The five decisions above determine the shape of the core data structure. Below is the full schema for what `loadModel()` returns after this project. The public API is unchanged, and `_materialSlices` is the only addition:
+
 ```javascript
 // what loadModel() returns (p5.Geometry, unchanged public api)
 {
