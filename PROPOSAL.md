@@ -113,6 +113,10 @@ i tried my best to emphasize the same in my proposal, complex features happen un
 ultimately, an open source project is accessible when it is as intuitive to use as it is welcoming to build.
 
 
+***
+
+# Section 3: Proposed Work
+
 ## 1. synopsis
 
 when a beginner downloads a 3d model from sketchfab, exports one from blender, maya, or tinkercad, and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
@@ -131,76 +135,6 @@ what makes this worse is that **the failure is completely silent**. `loadModel()
 this project removes that wall **without changing a single line of user code**. under the hood, the parser is taught to slice geometry by material boundary, and the renderer is taught to loop through those slices, each with its own texture and material uniforms.
 
 this is directly in line with p5.js's core value: reduce cognitive load, maximise access. a beginner should not have to open blender, learn uv-baking, or understand what a `uSampler` is. they should just be able to use art.
-
-
-## 2. background and what i already know
-
-### 2.1 the existing implementation (pr #6710, merged by **diya** ([@diyaayay](https://github.com/diyaayay)) and **dave** ([@davepagurek](https://github.com/davepagurek)))
-
-i read through the entire pr #6710 (.mtl color support, merged 2024) to understand where the current code sits:
-
-- `parseMtl()` parses `Kd`, `Ka`, `Ks`, and `map_Kd` (texture path stored but never used)
-- `parseObj()` reads `usemtl` tokens and bakes the `Kd` diffuse colour into `model.vertexColors` as flat rgba values
-- the result is a single `p5.Geometry` with per-vertex colour but no texture, a lossy representation
-- `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`, `d`, `illum` are **silently ignored**
-
-issue #6924 (filed by sableraf) formally tracks what's missing. this project resolves it completely.
-
-the collapsing approach introduced by #6710 had immediate side effects  - pr #6921 was filed and fixed within the same release cycle because vertex deduplication was destroying texture coordinates for models where vertices are shared across faces. davepagurek's fix in pr #6923 explicitly documents how the single-array design makes per-material texture assignment structurally impossible. the architecture that caused #6921 is the same architecture this project replaces.
-
-### 2.2 what i found in the dev-2.0 codebase
-
-i studied the following files directly in the `dev-2.0` branch:
-
-| file | what i looked at |
-|---|---|
-| `src/webgl/loading.js` | `parseObj()`, `parseMtl()`, `model()`, the entire vertex-deduplication pipeline |
-| `src/core/p5.Renderer3D.js` | `model()`, `_drawGeometry()`, `_drawFills()`, `buildGeometry()` |
-| `src/webgl/p5.RendererGL.js` | `_drawBuffers()`, the single `gl.drawElements()` call |
-| `src/webgl/p5.Geometry.js` | all 20 properties of the geometry class |
-| `src/webgl/material.js` | `fn.texture()`, global texture state |
-| `src/webgl/p5.Shader.js` | `bindTextures()`, confirms one global texture per draw call |
-
-key findings:
-
-- `beginGeometry()` and `endGeometry()` are not exposed as public user-facing functions in dev-2.0. they exist as internal renderer methods but there is no `fn.beginGeometry` or `fn.endGeometry`. the user-facing replacement is `buildGeometry(callback)`, which calls them internally. i built my entire poc using this api to ensure the proposal aligns with the new 2.0 architecture.
-- `_materialSlices`, `materialGroups`, `subGeometries`, none of these exist on `Geometry`. this is the gap to fill.
-- `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
-- **dave** ([@davepagurek](https://github.com/davepagurek))'s comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
-
-### 2.3 how mentor and community feedback shaped this proposal
-
-the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback, community-reported issues, and public discourse conversations, and that process is worth documenting because it changed the architecture.
-
-when i first shared a prototype sketch with **kit** ([@ksen0](https://github.com/ksen0)), she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** ([@ksen0](https://github.com/ksen0)) identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
-
-in 2022, **diya** ([@diyaayay](https://github.com/diyaayay)) opened pr #7176, exploring this exact feature space with a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **dave** ([@davepagurek](https://github.com/davepagurek)) noted: *"the direction is right but needs more design work."* that earlier exploration informed the architecture of this proposal directly. **diya**'s choice to mentor this proposal reflects genuine continuity in the community's investment in this problem. and in issue #6670, **dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is a direct response to that design question, which has remained open since 2022.
-
-when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the approach for this proposal, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
-
-**dave** ([@davepagurek](https://github.com/davepagurek)) confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
-
-**diya** ([@diyaayay](https://github.com/diyaayay)) also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
-
-**connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
-
-beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. **the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library**.
-
-### 2.5 previous attempts and why they stalled
-
-this is not a new problem, and this proposal builds on prior exploration. three contributors investigated this before and each identified the right problem area. each attempt contributed to the understanding of what a complete architecture needs to look like. `_materialSlices` is an attempt to answer the design question that each of those efforts raised.
-
-| pr | author | year | what it tried | why it stalled |
-|---|---|---|---|---|
-| [#7176](https://github.com/processing/p5.js/pull/7176) | **diya** | 2022 | `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state | **dave**: *"direction is right but needs more design work"*  - closed |
-| [#7072](https://github.com/processing/p5.js/pull/7072) | rohanjulka19 | 2022 | per-material texture mappings stored in `p5.Geometry`, index buffer re-rendered per texture | **dave** raised class design concerns about splitting `p5.Geometry`  - stalled open |
-| [#8675](https://github.com/processing/p5.js/pull/8675) | aakritithecoder | 2024 | `map_Ka`, `map_Ks`, `map_Bump` parsing added to `parseMtl()` | closed by **kit** for missing tests and wrong branch  - no architecture |
-
-the common thread: every attempt ran into the same design question **dave** named in [issue #6670](https://github.com/processing/p5.js/issues/6670) in 2022  - *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is this proposal's answer to that question.
-
-### 2.4 my existing contribution
-
-i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. the `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. i found this bug while reading `parseObj()` specifically to understand the code i would be working on for this project. it was not a separate investigation, it came directly out of the deep read i did for the proposal. this is also why i know exactly where the slicer needs to be inserted in that function.
 
 
 ## 3. the problem, stated precisely
@@ -553,6 +487,10 @@ the poc renders 12 separate material slices (shirt, jacket, head, eyes, irises, 
 the poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. it answers the question "do the layers work together?" - the parser, data layer, and renderer all behave as the proposal describes. the implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
 
 
+***
+
+# Section 4: Timeline
+
 ## 7. scope and why this is 300 hours
 
 the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
@@ -720,6 +658,81 @@ what i will do instead is design the materialProfile object to be extensible fro
 i want to confirm with **dave** ([@davepagurek](https://github.com/davepagurek)) that this sequencing makes sense, since he was the one who raised it. before gsoc ends i will open a github issue formally tracking pbr materialProfile extensions (metalness, roughness, gltf alignment) so the conversation has a home and other contributors can pick it up.
 
 the architecture described in this proposal is my strongest current recommendation based on the codebase reading, the poc, and the mentor conversations so far. that said, i fully expect the implementation details to evolve once the wider team weighs in during pr review. that is a normal and healthy part of contributing to an open source project and i am ready to adapt as reviewers surface things i have not anticipated.
+
+
+***
+
+# Section 5: Research
+
+
+## 2. background and what i already know
+
+### 2.1 the existing implementation (pr #6710, merged by **diya** ([@diyaayay](https://github.com/diyaayay)) and **dave** ([@davepagurek](https://github.com/davepagurek)))
+
+i read through the entire pr #6710 (.mtl color support, merged 2024) to understand where the current code sits:
+
+- `parseMtl()` parses `Kd`, `Ka`, `Ks`, and `map_Kd` (texture path stored but never used)
+- `parseObj()` reads `usemtl` tokens and bakes the `Kd` diffuse colour into `model.vertexColors` as flat rgba values
+- the result is a single `p5.Geometry` with per-vertex colour but no texture, a lossy representation
+- `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`, `d`, `illum` are **silently ignored**
+
+issue #6924 (filed by sableraf) formally tracks what's missing. this project resolves it completely.
+
+the collapsing approach introduced by #6710 had immediate side effects  - pr #6921 was filed and fixed within the same release cycle because vertex deduplication was destroying texture coordinates for models where vertices are shared across faces. davepagurek's fix in pr #6923 explicitly documents how the single-array design makes per-material texture assignment structurally impossible. the architecture that caused #6921 is the same architecture this project replaces.
+
+### 2.2 what i found in the dev-2.0 codebase
+
+i studied the following files directly in the `dev-2.0` branch:
+
+| file | what i looked at |
+|---|---|
+| `src/webgl/loading.js` | `parseObj()`, `parseMtl()`, `model()`, the entire vertex-deduplication pipeline |
+| `src/core/p5.Renderer3D.js` | `model()`, `_drawGeometry()`, `_drawFills()`, `buildGeometry()` |
+| `src/webgl/p5.RendererGL.js` | `_drawBuffers()`, the single `gl.drawElements()` call |
+| `src/webgl/p5.Geometry.js` | all 20 properties of the geometry class |
+| `src/webgl/material.js` | `fn.texture()`, global texture state |
+| `src/webgl/p5.Shader.js` | `bindTextures()`, confirms one global texture per draw call |
+
+key findings:
+
+- `beginGeometry()` and `endGeometry()` are not exposed as public user-facing functions in dev-2.0. they exist as internal renderer methods but there is no `fn.beginGeometry` or `fn.endGeometry`. the user-facing replacement is `buildGeometry(callback)`, which calls them internally. i built my entire poc using this api to ensure the proposal aligns with the new 2.0 architecture.
+- `_materialSlices`, `materialGroups`, `subGeometries`, none of these exist on `Geometry`. this is the gap to fill.
+- `model()` in dev-2.0 accepts `(model, count=1)` where `count` is for webgl2 instanced rendering.
+- **dave** ([@davepagurek](https://github.com/davepagurek))'s comment on the pr architecture: "if `loadModel` could load a group or a single geometry, we'd want them to behave as similarly to each other as possible, so if you draw a single geometry with `model`, then one would expect that to work for a group too."
+
+### 2.3 how mentor and community feedback shaped this proposal
+
+the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback, community-reported issues, and public discourse conversations, and that process is worth documenting because it changed the architecture.
+
+when i first shared a prototype sketch with **kit** ([@ksen0](https://github.com/ksen0)), she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** ([@ksen0](https://github.com/ksen0)) identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
+
+in 2022, **diya** ([@diyaayay](https://github.com/diyaayay)) opened pr #7176, exploring this exact feature space with a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **dave** ([@davepagurek](https://github.com/davepagurek)) noted: *"the direction is right but needs more design work."* that earlier exploration informed the architecture of this proposal directly. **diya**'s choice to mentor this proposal reflects genuine continuity in the community's investment in this problem. and in issue #6670, **dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is a direct response to that design question, which has remained open since 2022.
+
+when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the approach for this proposal, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
+
+**dave** ([@davepagurek](https://github.com/davepagurek)) confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
+
+**diya** ([@diyaayay](https://github.com/diyaayay)) also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
+
+**connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
+
+beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. **the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library**.
+
+### 2.5 previous attempts and why they stalled
+
+this is not a new problem, and this proposal builds on prior exploration. three contributors investigated this before and each identified the right problem area. each attempt contributed to the understanding of what a complete architecture needs to look like. `_materialSlices` is an attempt to answer the design question that each of those efforts raised.
+
+| pr | author | year | what it tried | why it stalled |
+|---|---|---|---|---|
+| [#7176](https://github.com/processing/p5.js/pull/7176) | **diya** | 2022 | `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state | **dave**: *"direction is right but needs more design work"*  - closed |
+| [#7072](https://github.com/processing/p5.js/pull/7072) | rohanjulka19 | 2022 | per-material texture mappings stored in `p5.Geometry`, index buffer re-rendered per texture | **dave** raised class design concerns about splitting `p5.Geometry`  - stalled open |
+| [#8675](https://github.com/processing/p5.js/pull/8675) | aakritithecoder | 2024 | `map_Ka`, `map_Ks`, `map_Bump` parsing added to `parseMtl()` | closed by **kit** for missing tests and wrong branch  - no architecture |
+
+the common thread: every attempt ran into the same design question **dave** named in [issue #6670](https://github.com/processing/p5.js/issues/6670) in 2022  - *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is this proposal's answer to that question.
+
+### 2.4 my existing contribution
+
+i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. the `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. i found this bug while reading `parseObj()` specifically to understand the code i would be working on for this project. it was not a separate investigation, it came directly out of the deep read i did for the proposal. this is also why i know exactly where the slicer needs to be inserted in that function.
 
 
 ***
