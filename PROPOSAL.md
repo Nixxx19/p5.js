@@ -48,6 +48,52 @@ i want to learn how to write visual regression tests for 3D rendering. i know ho
 
 non-technically i want to learn how to break a large architectural change into reviewable chunks that do not overwhelm a reviewer. i have shipped individual fixes before but decomposing something this structural into a PR sequence that a maintainer can actually follow is a different skill entirely. and i want to learn how senior contributors think about API stability and backwards compatibility — when to expose something, when to keep it private, what the long-term cost of a decision is. that kind of judgment does not come from reading. it comes from being in the process with people who have thought about it for years.
 
+
+***
+
+# Section 2: Contribution & Open Source
+
+**1. a contribution i am most proud of**
+
+[PR #8666](https://github.com/processing/p5.js/pull/8666)
+
+the contribution i am most proud of is PR #8666 on p5.js dev-2.0. while doing the deep source read for this proposal, i found a boolean logic error at lines 655-658. the hasColoredVertices === hasColorlessVertices condition caused blender, maya, tinkercad, and sketchfab exports to crash instead of loading gracefully. i opened the fix while doing the deep source read for this proposal, not as a separate investigation.
+
+what i learned is that the best way to understand a codebase is to read it with the intention of using it, not just studying it. i was not hunting for bugs. i was following data through a pipeline. the bug appeared because i was paying attention, not because i was looking for it.
+
+**2. a p5.js sketch i made that i am most satisfied with**
+
+[PoC sketch](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)
+
+the sketch i am most satisfied with is the proof of concept i built for this proposal. it renders 12 separate material slices of the same character, each with their own texture and colour, using the exact same model() call a user would write today.
+
+i am satisfied with it not because it looks impressive but because it proved something before i claimed it. i built the entire poc on dev-2.0 APIs before writing this proposal. that is the only reason i could write the architecture sections with confidence.
+
+**3. a p5.js sketch by someone else that inspires me**
+
+[Growth by atzedent (Matthias Hurrle)](https://openprocessing.org/sketch/2679978)
+
+the first time i ran it i just sat there for a while. it looks like coral shifting underwater. there is something genuinely calm about watching it, the way the patterns breathe and reorganise when you move the mouse. it does not feel like code. it feels like something that is alive and does not know you are watching it.
+
+what got me was the gap between what it is and what it looks like. it is mathematics. it is a loop running in a browser tab. but it produces something that feels organic and unhurried in a way that most generative art does not. i kept wanting to understand the technique behind it, not to copy it, but because i could not figure out how something written in code could feel that peaceful. that curiosity is what creative coding does at its best. it makes you ask how, not just what.
+
+**4. an open source project i use regularly**
+
+[Blender](https://github.com/blender/blender)
+
+i use Blender regularly as part of my gaming and animation elective. we model characters, rig them, texture them, and export them. Blender is fully open source under the GPL license and it is one of the best examples of open source done right — a tool that competes with expensive industry software purely because a community decided it should exist. the fact that the OBJ files i export from Blender are the exact files this project learns to handle correctly is not a coincidence. i came to this project from the Blender side first.
+
+**5. what is most important to make open source accessible**
+
+i think open source becomes truly accessible when three things are in place:
+
+- the community has to feel safe. the biggest barrier is not technical, it is the fear of being dismissed. a welcoming environment that values patience and mentorship turns silent users into active contributors.
+- the tooling has to be approachable. clear documentation and a setup process that does not break on the first try ensures people do not give up before writing their first line of code.
+- the software itself has to be built for people who do not know how it works inside. complex functionality should be invisible by default so that a beginner is not blocked by what they do not yet understand.
+
+as i emphasized in my proposal, complex features should happen under the hood. by prioritising zero regression architecture, a beginner can simply call loadModel() without worrying about GPU caching or breaking their existing sketches. ultimately, an open source project is accessible when it is as intuitive to use as it is welcoming to build.
+
+
 ## 1. synopsis
 
 when a beginner downloads a 3d model from sketchfab, exports one from blender, maya, or tinkercad, and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
