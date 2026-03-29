@@ -7,6 +7,47 @@
 **mentors:** **Diya Solanki** ([@diyaayay](https://github.com/diyaayay)) & **Claudine Chen** ([@mingness](https://github.com/mingness))
 
 
+
+***
+
+# Section 1: Introduction
+
+**Name:** Nityam
+**GitHub:** [@Nixxx19](https://github.com/Nixxx19)
+**Discourse:** [nixxx19](https://discourse.processing.org/u/nixxx19/summary)
+**Discord:** nityam_33606
+**Pronouns:** he/him
+
+## Short bio
+
+i am a third-year computer science engineering student at Thapar University, Patiala. i am a systems-oriented developer and most of my work sits in Rust, TypeScript, and distributed systems, spanning multi-agent decision engines, CI/CD infrastructure, and real-time API services. i read research before i write code and i treat every codebase i work in like a production system.
+
+alongside this, i take an elective in gaming and animation where i work with Blender, modelling and texturing characters for real pipelines. that elective pulled me into JavaScript and WebGL based creative coding tools, and i have been working with p5.js long enough to know its internals well. that combination of low-level systems thinking and hands-on 3D and creative coding work is what shapes how i approach problems.
+
+## Project abstract
+
+p5.js currently flattens all geometry from a 3D model into one shape and renders it with a single texture. every model exported from blender, maya, sketchfab, or tinkercad with more than one material comes out as a flat grey blob with no error and no warning. the user did everything right. the library silently threw away the material information at parse time.
+
+this project fixes that at the root. it rewrites the obj parser to preserve material boundaries, introduces a lightweight private data structure to carry per-material geometry and texture information, and extends the renderer to loop through each material group and draw it correctly. the result is that a fully textured multi-material model loads and renders as the artist intended. the user calls loadModel() exactly as before. nothing in the public api changes. every model that currently renders broken renders correctly.
+
+## Interests & skills
+
+**what i find most interesting about this project**
+
+what pulls me in is that the fix does not live in one place. it touches the parser, the data layer, and the GPU renderer all at once. most bugs are isolated. this one is not. you have to understand how an OBJ file encodes material boundaries, how that data survives the parse, and how WebGL actually binds textures at draw time before you can even describe what is broken. i genuinely love that kind of challenge. when i first started reading the source it took me a while, but the moment it clicked, everything started connecting. the existing PRs, the old issues, the design decisions that seemed unrelated at first — they all started pointing at the same root cause. it felt less like reading code and more like following a trail where every clue was already there. i find that kind of thing really fun. i cannot fake my way through it and i do not want to.
+
+**what i bring**
+
+technically i bring a systems background that makes me comfortable reading unfamiliar source code and tracing data through pipelines before touching anything. i have worked in Rust, TypeScript, and distributed systems long enough that reading a JavaScript renderer and following a buffer through it feels natural to me. i also bring real 3D context from my Blender coursework. i am not guessing at what artists need from this fix. i have hit the same wall myself.
+
+non-technically i bring patience, good communication, and a dual perspective that i think is genuinely rare. i am both the person this bug hurt and the artist fixing it. i have been on the artist side — spending hours texturing a character in Blender and watching it come out wrong. i know exactly what that frustration feels like. that makes me care about getting this right in a way that goes beyond the technical challenge. i communicate clearly when something is complicated, which i think matters in open source where reviewers need to trust your reasoning not just your code. and i am honest about what i do not know. i do not oversell what i have built or pretend a proof of concept is a finished solution. i think that kind of straightforwardness saves everyone time.
+
+**what i want to develop**
+
+i want to learn how to write visual regression tests for 3D rendering. i know how to test backend systems and APIs but testing what a GPU actually draws is something i have not done at a production level and i want to. i also want to experience a full open source PR review cycle with senior maintainers on a widely used library. i have shipped PRs before but going through the full cycle with proper review, iteration, and merge on something this architectural is a different level and i am here for that. on the technical side i want to go deeper into GLSL and the shader pipeline because right now my WebGL knowledge stops at the JavaScript layer and i want to go further.
+
+non-technically i want to learn how to break a large architectural change into reviewable chunks that do not overwhelm a reviewer. i have shipped individual fixes before but decomposing something this structural into a PR sequence that a maintainer can actually follow is a different skill entirely. and i want to learn how senior contributors think about API stability and backwards compatibility — when to expose something, when to keep it private, what the long-term cost of a decision is. that kind of judgment does not come from reading. it comes from being in the process with people who have thought about it for years.
+
 ## 1. synopsis
 
 when a beginner downloads a 3d model from sketchfab, exports one from blender, maya, or tinkercad, and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
