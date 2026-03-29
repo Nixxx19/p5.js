@@ -239,6 +239,7 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 `map_Kd` is the only map bound to the shader in v1 - the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
 
 ### 3.4.2 parser changes (loading.js)
+*Phase 2 (parseMtl · weeks 3–5) + Phase 3 (parseObj slicer · weeks 6–8)*
 
 **parseMtl() extended:**
 ```
@@ -278,6 +279,7 @@ draw order: slices are inserted in obj file order, which matches the artist's 3d
 `hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
 
 ### 3.4.3 renderer changes (p5.Renderer3D.js)
+*Phase 4 · weeks 9–11*
 
 the existing `model()` method in `Renderer3D`:
 ```javascript
@@ -347,6 +349,7 @@ the per-slice gpu buffer caching works as follows: each slice's sub-geometry is 
 when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` - the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
 
 ### 3.4.4 buildGeometry() integration (**dave** ([@davepagurek](https://github.com/davepagurek))'s suggestion)
+*Phase 5 · weeks 12–13*
 
 **dave** ([@davepagurek](https://github.com/davepagurek)) noted: "similarly for building groups by using `buildGeometry` and swapping between things we can't currently support in one geometry, like textures, but also things like metalness, specularMaterial, etc."
 
@@ -369,6 +372,7 @@ this is detected internally by diffing material state in `GeometryBuilder`. this
 since this touches the behaviour of an existing api, i will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
 
 ### 3.4.5 texture loading, eager vs lazy
+*Phase 2 · weeks 3–5*
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
@@ -381,6 +385,7 @@ i propose eager loading for this project. lazy loading can be a follow-up optimi
 the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
 ### 3.4.6 error handling
+*Phase 3 + Phase 4*
 
 three failure modes and how the implementation handles each:
 
@@ -597,13 +602,13 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 
 | phase | work | weeks | hours | buffer (hrs) |
 |---|---|---|---|---|
-| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) | week 1-2 | 40h | 5h |
-| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline | week 3-5 | 35h | 5h |
-| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation | week 6-8 | 55h | 15h |
+| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **diya** ([@diyaayay](https://github.com/diyaayay)), **claudine** ([@mingness](https://github.com/mingness)) → §4.2 | week 1-2 | 40h | 5h |
+| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.5 | week 3-5 | 35h | 5h |
+| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.2, §3.4.6 | week 6-8 | 55h | 15h |
 | community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. gather feedback before renderer work begins. | end of week 8 | - | - |
-| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice | week 9-11 | 50h | 15h |
+| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.3, §3.4.6 | week 9-11 | 50h | 15h |
 | community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
-| Phase 5 | `buildGeometry()` mid-draw material boundary detection | week 12-13 | 35h | 5h |
+| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.4 | week 12-13 | 35h | 5h |
 | Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
 | Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
@@ -619,6 +624,7 @@ weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work 
 
 
 ## 4.2 architectural decisions for the community bonding period
+*Phase 1 · weeks 1–2*
 
 i have researched each of these thoroughly and have a clear position on each one. each decision touches the public api or shader pipeline and should have explicit sign-off from the team before i write production code. i want to align early rather than surface surprises at pr review.
 
