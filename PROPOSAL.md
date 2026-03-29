@@ -69,9 +69,22 @@ what i learned is that the best way to understand a codebase is to read it with 
 
 [Raymarched Anomaly Sketch](https://editor.p5js.org/nityamt199/sketches/N7Wov74qW)
 
-the sketch i am most satisfied with is the proof of concept i built for this proposal. it renders 12 separate material slices of the same character, each with their own texture and colour, using the exact same model() call a user would write today.
+**The Story & Motivation**
 
-i am satisfied with it not because it looks impressive but because it proved something before i claimed it. i built the entire poc on dev-2.0 APIs before writing this proposal. that is the only reason i could write the architecture sections with confidence.
+I’ve always been fascinated by astrophysics and classic sci-fi tropes—specifically the idea of ancient, hyper-advanced technology floating out in deep space. I wanted to create a scene that felt like you just stumbled upon a navigational beacon or a containment field holding a miniature singularity. 
+
+But beyond the artistic vision, my primary motivation was to understand the WebGL rendering pipeline from the inside out. I wanted to build this entire 3D world—the morphing shapes, lighting, shadows, and reflections—using pure math in a fragment shader. There is no mesh data, no OBJ files, and no textures loaded from disk. The GPU simply runs the same GLSL code in parallel for every pixel on the screen, every single frame.
+
+**Why I am most satisfied with it**
+
+Building this forced me to understand exactly how rendering works under the hood. To make the singularity look realistic, I had to manually code:
+
+* How a ray cast from the camera intersects a mathematical surface using **Signed Distance Fields (SDFs)**.
+* How **soft shadows** are estimated by marching a ray toward a light and measuring its proximity to occluders.
+* How **ambient occlusion** approximates indirect light by sampling the scene in a hemisphere around the surface normal.
+* How **Fresnel reflectance** changes a surface's apparent color based on the viewing angle.
+
+That deep, foundational understanding is what I am most proud of. It is exactly what later allowed me to read p5.js's WebGL source code and immediately spot a structural problem in their OBJ loader. Because I knew how the pipeline worked, I realized the entire scene resolves to one `gl.drawElements()` call, and a single draw call can only have one texture bound. Knowing that the fix requires a deeper architectural change rather than a quick patch is a direct result of the trial and error it took to build this raymarcher. This sketch is exactly how I got there.
 
 **3. a p5.js sketch by someone else that inspires me**
 
