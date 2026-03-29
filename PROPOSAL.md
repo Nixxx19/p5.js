@@ -16,7 +16,7 @@ the difference is not subtle:
 | before (p5.js today) | after (this project) |
 |---|---|
 | <p align="center"><img src="https://github.com/user-attachments/assets/c9649c7f-2f96-4213-a6ad-08f7132688f9" /></p> | <p align="center"><img src="https://github.com/user-attachments/assets/b283bc81-e1ee-4c68-8add-6d052804121f" /></p> |
-| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. |
+| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. hair, skin, jacket, eyes, shoes, completely indistinguishable. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. same geometry, same user call, every material group renders with its own texture and colour. *(geometry assembled via `buildGeometry()` to simulate what the parser will produce - loading real `.obj`/`.mtl` files is the phase 2 implementation)* |
 
 both sketches use the exact same geometry and the exact same `model()` call. the only difference is whether the renderer knows how to loop through material slices.
 
@@ -97,11 +97,11 @@ create a new class that wraps an array of `p5.Geometry` objects. `loadModel()` r
 why i rejected it: this is a breaking change. any code doing `instanceof p5.Geometry` checks would fail. concretely:
 
 ```javascript
-// option a — user code must branch on return type:
+// option a - user code must branch on return type:
 let geom = loadModel('robot.obj'); // now returns p5.GeometryGroup, not p5.Geometry
-model(geom);                       // breaks — model() only accepts p5.Geometry
+model(geom);                       // breaks - model() only accepts p5.Geometry
 
-// option c — user code unchanged:
+// option c - user code unchanged:
 let geom = loadModel('robot.obj'); // still returns p5.Geometry
 model(geom);                       // works for 1 or 12 materials, same call
 ```
@@ -161,10 +161,10 @@ the flowchart below shows how the renderer decides which path to take. if the ge
         opacity:       1.0,         // d
         illumination:  2,           // illum
         map_Kd:        p5.Image,    // loaded diffuse texture
-        map_Ks:        p5.Image,    // loaded specular map (null if absent) — stored in v1, shader binding deferred
-        map_Bump:      p5.Image,    // loaded bump/normal map (null if absent) — stored in v1, shader binding deferred
-        map_Ka:        p5.Image,    // loaded ambient map (null if absent) — stored in v1, shader binding deferred
-        map_Ns:        p5.Image,    // loaded shininess map (null if absent) — stored in v1, shader binding deferred
+        map_Ks:        p5.Image,    // loaded specular map (null if absent) - stored in v1, shader binding deferred
+        map_Bump:      p5.Image,    // loaded bump/normal map (null if absent) - stored in v1, shader binding deferred
+        map_Ka:        p5.Image,    // loaded ambient map (null if absent) - stored in v1, shader binding deferred
+        map_Ns:        p5.Image,    // loaded shininess map (null if absent) - stored in v1, shader binding deferred
       }
     },
     // one entry per usemtl group in the obj file
@@ -172,7 +172,7 @@ the flowchart below shows how the renderer decides which path to take. if the ge
 }
 ```
 
-`map_Kd` is the only map bound to the shader in v1 — the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
+`map_Kd` is the only map bound to the shader in v1 - the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
 
 ### 5.2 parser changes (loading.js)
 
@@ -197,7 +197,7 @@ when parseObj() encounters a "usemtl <name>" token:
 
 on end-of-file:
   5. finalise the last open slice. if slice.geometry.vertexNormals is empty
-     (obj file had no vn lines), call slice.geometry.computeNormals() — same
+     (obj file had no vn lines), call slice.geometry.computeNormals() - same
      fallback the current single-geometry path applies at line 652 of loading.js
   6. if only 1 slice exists, attach nothing (use existing single-draw path)
   7. if more than 1 slices, attach array as parent._materialSlices
@@ -209,9 +209,9 @@ uv re-indexing: obj uv coordinates (`vt`) are stored in a single global list and
 
 draw order: slices are inserted in obj file order, which matches the artist's 3d software export order. no automatic depth sorting for opaque meshes since the depth buffer handles occlusion correctly for opaque geometry automatically.
 
-`_makeTriangleEdges()`: in the current code, `loadModel()` calls `model._makeTriangleEdges()` on the parent geometry after `parseObj()` returns. this generates stroke geometry (line vertices, tangents, caps, joins). in the sliced design, all vertices live in sub-geometries — the parent has none — so the existing single call produces nothing. the slicer will call `_makeTriangleEdges()` on each slice's sub-geometry individually before attaching it to `_materialSlices`.
+`_makeTriangleEdges()`: in the current code, `loadModel()` calls `model._makeTriangleEdges()` on the parent geometry after `parseObj()` returns. this generates stroke geometry (line vertices, tangents, caps, joins). in the sliced design, all vertices live in sub-geometries - the parent has none - so the existing single call produces nothing. the slicer will call `_makeTriangleEdges()` on each slice's sub-geometry individually before attaching it to `_materialSlices`.
 
-`hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely — each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
+`hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). the per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. the mixed state that causes the throw cannot occur per slice. this means the slicer also resolves the underlying condition that made pr #8666 necessary.
 
 ### 5.3 renderer changes (p5.Renderer3D.js)
 
@@ -238,7 +238,7 @@ model(model, count = 1) {
   if (model._materialSlices && model._materialSlices.length > 1) {
     // new: multi-draw path, loop through slices
     if (this.geometryBuilder) {
-      // inside buildGeometry() — geometry only, material state not preserved.
+      // inside buildGeometry() - geometry only, material state not preserved.
       // GeometryBuilder.addGeometry() flattens vertices into one combined geometry
       // and discards texture/material per slice. full multi-material support inside
       // buildGeometry() is Phase 5's scope; this path handles geometry capture only.
@@ -274,13 +274,13 @@ model(model, count = 1) {
 }
 ```
 
-`_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today. if `map_Kd` is absent from a slice, the slicer falls back to `diffuseColor` as `ambientMaterial` — the same fallback the poc uses today. under the hood, each slice results in one `gl.drawElements()` call with its own texture unit bound, replacing the single call that currently covers the whole model.
+`_applyMaterialProfile()` will call `this.texture()`, `this.specularMaterial()`, `this.ambientMaterial()`, `this.shininess()` with values from the `materialProfile`, the same functions users call today. if `map_Kd` is absent from a slice, the slicer falls back to `diffuseColor` as `ambientMaterial` - the same fallback the poc uses today. under the hood, each slice results in one `gl.drawElements()` call with its own texture unit bound, replacing the single call that currently covers the whole model.
 
-the per-slice draw loop uses `push()`/`pop()` rather than a custom `_resetMaterialProfile()`. this is necessary to preserve whatever material state the caller had set before calling `model()` — for example, if the user called `texture(myTex)` before `model(robot)`, a null-reset would silently destroy `myTex` and break any geometry drawn after the call. `push()` saves the full renderer state before each slice, `pop()` restores it after. the poc already uses this pattern correctly and the production implementation follows it for the same reason.
+the per-slice draw loop uses `push()`/`pop()` rather than a custom `_resetMaterialProfile()`. this is necessary to preserve whatever material state the caller had set before calling `model()` - for example, if the user called `texture(myTex)` before `model(robot)`, a null-reset would silently destroy `myTex` and break any geometry drawn after the call. `push()` saves the full renderer state before each slice, `pop()` restores it after. the poc already uses this pattern correctly and the production implementation follows it for the same reason.
 
-the per-slice gpu buffer caching works as follows: each slice's sub-geometry is a separate `p5.Geometry` object with its own `gid`. `_getOrMakeCachedBuffers()` keys the buffer cache on `gid`, so 12 slices produce 12 separate gpu buffer objects — uploaded once on first draw and reused on every subsequent frame, the same caching behaviour as a single geometry today but applied per slice.
+the per-slice gpu buffer caching works as follows: each slice's sub-geometry is a separate `p5.Geometry` object with its own `gid`. `_getOrMakeCachedBuffers()` keys the buffer cache on `gid`, so 12 slices produce 12 separate gpu buffer objects - uploaded once on first draw and reused on every subsequent frame, the same caching behaviour as a single geometry today but applied per slice.
 
-when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` — the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
+when `_applyMaterialProfile()` calls `this.texture()`, it sets the renderer's active texture state. `_drawGeometry()` then calls `_drawFills()`, which calls `shader.bindTextures()` and then `_drawBuffers()`. `_drawBuffers()` issues `gl.drawElements()` - the existing shader binding machinery in `p5.Shader.js` is reused unchanged. the new path calls it once per slice instead of once per model.
 
 ### 5.4 buildGeometry() integration (dave's suggestion)
 
@@ -308,21 +308,21 @@ since this touches the behaviour of an existing api, i will prioritise confirmin
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
-eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` — the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. textures are guaranteed ready before the first frame. no complexity.
+eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. textures are guaranteed ready before the first frame. no complexity.
 
 lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
 
 i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
 
-the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access — it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame — no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
+the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
 ### 5.6 error handling
 
 three failure modes and how the implementation handles each:
 
-**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path — same behaviour as today, zero regression.
+**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path - same behaviour as today, zero regression.
 
-**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path — unlike today where this failure is completely silent.
+**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path - unlike today where this failure is completely silent.
 
 **partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. no slice's failure affects any other slice.
 
@@ -424,7 +424,7 @@ function drawMultiMaterial(geom) {
 
 the poc renders 12 separate material slices (shirt, jacket, head, eyes, irises, pupils, eye shine, eyebrows, nose, lips, hair, shoes) each with their own texture or colour. this is completely impossible with the current p5.js renderer. the poc proves the architecture works end to end in dev-2.0.
 
-the poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. it answers the question "do the layers work together?" — the parser, data layer, and renderer all behave as the proposal describes. the implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
+the poc intentionally uses `buildGeometry()` instead of `loadModel()` to isolate and validate the three-layer architecture independently. it answers the question "do the layers work together?" - the parser, data layer, and renderer all behave as the proposal describes. the implementation phases will extend this to handle the full `loadModel()` path including real obj/mtl files, uv mapping edge cases, and face winding.
 
 
 ## 7. scope and why this is 300 hours
@@ -447,12 +447,12 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
 | 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
 | **core total** | | **week 1-20** | **300h** | **60h** |
-| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | — |
-| **gsoc total** | | **22 weeks** | **300h** | — |
+| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
+| **gsoc total** | | **22 weeks** | **300h** | - |
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
-phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer — it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only — the visual screenshot comparison suite is deferred to a follow-up pr. the core deliverables (parser, data layer, renderer) are never at risk.
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. the core deliverables (parser, data layer, renderer) are never at risk.
 
 weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
@@ -517,7 +517,7 @@ i have contributed across the full p5.js ecosystem before this gsoc application,
 
 **p5.js core (2 open prs):**
 - **pr #8666:** fixes the `parseObj()` crash for mixed-material obj models. in the exact file this gsoc project modifies. this is directly in the 3d/webgl rendering path.
-- **pr #8555:** fixes a browser freeze when tessellating geometry over 50k vertices. a webgl renderer fix in the same rendering layer this project works in. both open prs are in the core 3d pipeline — not peripheral fixes.
+- **pr #8555:** fixes a browser freeze when tessellating geometry over 50k vertices. a webgl renderer fix in the same rendering layer this project works in. both open prs are in the core 3d pipeline - not peripheral fixes.
 
 **p5.js web editor (13 merged prs):**
 the web editor is where beginners actually write their p5.js code. i have 13 merged contributions there covering security fixes (oauth, bcrypt, mass assignment vulnerabilities), performance (502 timeout on project downloads, zip streaming), accessibility (aria-live on form errors), and ux (signup flow when email verification fails). the range matters because it shows i understand the environment where the user experiences this bug, not just the renderer layer where it originates.
@@ -553,7 +553,7 @@ my current position is option b for v1, because it adds zero complexity, it matc
 
 should mid-draw material state changes automatically create a new slice (always-on), or should this be an opt-in flag?
 
-i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past dave since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands — phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
+i prefer always-on. the overhead is o(1) per draw call since it is just comparing a few uniform values against the previous call. most sketches that use `buildGeometry()` do not change materials mid-draw, so the detection cost is nearly always zero. an opt-in flag adds api surface area without meaningful benefit. i want to run this past dave since it touches the behaviour of an existing api. if the team prefers opt-in, i will ship the `buildGeometry()` integration as a separate pr after the core multi-material fix lands - phase 5 is already labelled as an extra deliverable, so the main timeline is not affected either way.
 
 **decision 3: texture loading, eager vs lazy**
 
