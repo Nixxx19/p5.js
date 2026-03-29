@@ -161,16 +161,18 @@ the flowchart below shows how the renderer decides which path to take. if the ge
         opacity:       1.0,         // d
         illumination:  2,           // illum
         map_Kd:        p5.Image,    // loaded diffuse texture
-        map_Ks:        p5.Image,    // loaded specular map (null if absent)
-        map_Bump:      p5.Image,    // loaded bump/normal map (null if absent)
-        map_Ka:        p5.Image,    // loaded ambient map (null if absent)
-        map_Ns:        p5.Image,    // loaded shininess map (null if absent)
+        map_Ks:        p5.Image,    // loaded specular map (null if absent) — stored in v1, shader binding deferred
+        map_Bump:      p5.Image,    // loaded bump/normal map (null if absent) — stored in v1, shader binding deferred
+        map_Ka:        p5.Image,    // loaded ambient map (null if absent) — stored in v1, shader binding deferred
+        map_Ns:        p5.Image,    // loaded shininess map (null if absent) — stored in v1, shader binding deferred
       }
     },
     // one entry per usemtl group in the obj file
   ]
 }
 ```
+
+`map_Kd` is the only map bound to the shader in v1 — the current `_setFillUniforms()` has a single `uSampler` uniform. `map_Ks`, `map_Bump`, `map_Ka`, and `map_Ns` are parsed and stored in `materialProfile` so they are available for follow-on work, but binding them requires adding new uniforms to the shader, which is out of scope for this project. a github issue will be filed at the end of gsoc to track that extension.
 
 ### 5.2 parser changes (loading.js)
 
@@ -244,6 +246,10 @@ model(model, count = 1) {
     } else {
       for (const slice of model._materialSlices) {
         this.push();                                      // save caller's material state
+        if (!this.geometryInHash(slice.geometry.gid)) {
+          slice.geometry._edgesToVertices();
+          this._getOrMakeCachedBuffers(slice.geometry);  // upload VBOs on first draw
+        }
         this._applyMaterialProfile(slice.materialProfile);
         this._drawGeometry(slice.geometry, { count });
         this.pop();                                       // restore caller's material state
@@ -306,7 +312,7 @@ lazy: load textures on first render. reduces initial load time for large models 
 
 i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
 
-the async coordination works as follows: `loadModel()` is already an `async` function. during parsing, every `map_*` path found by `parseMtl()` triggers a `loadImage()` call and the returned promise is pushed into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame — no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
+the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access — it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame — no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
 ### 5.6 error handling
 
