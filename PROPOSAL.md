@@ -9,7 +9,7 @@
 
 ## 1. synopsis
 
-when a beginner downloads a 3d model from sketchfab and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are silently destroyed at parse time.
+when a beginner downloads a 3d model from sketchfab and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
 
 the difference is not subtle:
 
@@ -20,9 +20,9 @@ the difference is not subtle:
 
 both sketches use the exact same geometry and the exact same `model()` call. the only difference is whether the renderer knows how to loop through material slices.
 
-what makes this worse is that the failure is completely silent. `loadModel()` resolves successfully and hands back a geometry object. the user stares at a grey blob and assumes they did something wrong. they eventually find out they need to open blender and bake textures. most of them give up long before that.
+what makes this worse is that **the failure is completely silent**. `loadModel()` resolves successfully and hands back a geometry object. the user stares at a grey blob and assumes they did something wrong. they eventually find out they need to open blender and bake textures. most of them give up long before that.
 
-this project removes that wall without changing a single line of user code. under the hood, the parser is taught to slice geometry by material boundary, and the renderer is taught to loop through those slices, each with its own texture and material uniforms.
+this project removes that wall **without changing a single line of user code**. under the hood, the parser is taught to slice geometry by material boundary, and the renderer is taught to loop through those slices, each with its own texture and material uniforms.
 
 this is directly in line with p5.js's core value: reduce cognitive load, maximise access. a beginner should not have to open blender, learn uv-baking, or understand what a `uSampler` is. they should just be able to use art.
 
@@ -36,7 +36,7 @@ i read through the entire pr #6710 (.mtl color support, merged 2024) to understa
 - `parseMtl()` parses `Kd`, `Ka`, `Ks`, and `map_Kd` (texture path stored but never used)
 - `parseObj()` reads `usemtl` tokens and bakes the `Kd` diffuse colour into `model.vertexColors` as flat rgba values
 - the result is a single `p5.Geometry` with per-vertex colour but no texture, a lossy representation
-- `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`, `d`, `illum` are silently ignored
+- `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`, `d`, `illum` are **silently ignored**
 
 issue #6924 (filed by sableraf) formally tracks what's missing. this project resolves it completely.
 
@@ -74,7 +74,7 @@ when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the appro
 
 **connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
 
-beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library.
+beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. **the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library**.
 
 ### 2.4 my existing contribution
 
@@ -118,19 +118,19 @@ why i rejected it: pollutes the public geometry api. since p5.js documentation i
 
 ### option c: private _materialSlices on p5.Geometry (chosen)
 
-attach a private `_materialSlices` array to the geometry object returned by `loadModel()`. each entry is `{ geometry: p5.Geometry, materialProfile: {...} }`. the renderer checks for this private property. the public geometry api is completely unchanged.
+attach a private `_materialSlices` array to the geometry object returned by `loadModel()`. each entry is `{ geometry: p5.Geometry, materialProfile: {...} }`. the renderer checks for this private property. **the public geometry api is completely unchanged**.
 
 why this is correct:
 
-- zero breaking changes. `loadModel()` still returns `p5.Geometry`, `model()` signature unchanged
+- **zero breaking changes**. `loadModel()` still returns `p5.Geometry`, `model()` signature unchanged
 - follows p5.js convention: private fields use `_` prefix (`_hasFillTransparency`, `_hasStrokeTransparency`, etc.)
 - aligns with **diya**'s directive to keep grouping logic internal
 - satisfies **dave**'s api parity: `model(singleMaterialGeom)` and `model(multiMaterialGeom)` are the same call
 - the fallback path (no `_materialSlices`) is the existing code with no modification
-- closest to how processing4 handles it: `PShapeOBJ` builds an array of `PShape` children internally. each child holds one material group's geometry. the user-facing draw call (`shape(s)`) loops through those children automatically so the user never sees the internal structure. this is the exact pattern i am proposing for p5.js: `_materialSlices` as private internal children, `model()` looping through them, user api completely unchanged. the fact that processing, the parent project, already solved this the same way is strong evidence the pattern is correct.
+- closest to how processing4 handles it: `PShapeOBJ` builds an array of `PShape` children internally. each child holds one material group's geometry. the user-facing draw call (`shape(s)`) loops through those children automatically so the user never sees the internal structure. this is the exact pattern i am proposing for p5.js: `_materialSlices` as private internal children, `model()` looping through them, user api completely unchanged. **the fact that processing, the parent project, already solved this the same way is strong evidence the pattern is correct**.
 
 
-the flowchart below shows how the renderer decides which path to take. if the geometry has no _materialSlices it falls through to the existing single draw call with zero regression for all existing sketches. if slices exist it loops through them, binding a new texture and material uniforms for each one before issuing its own gl.drawElements() call.
+the flowchart below shows how the renderer decides which path to take. if the geometry has no _materialSlices it falls through to the existing single draw call with **zero regression** for all existing sketches. if slices exist it loops through them, binding a new texture and material uniforms for each one before issuing its own gl.drawElements() call.
 
 <p align="center"><img width="560" alt="Screenshot 2026-03-22 at 4 06 03 PM" src="https://github.com/user-attachments/assets/6c22918d-24cd-45d3-8159-a4bf58b617dd" /></p>
 
@@ -310,23 +310,23 @@ since this touches the behaviour of an existing api, i will prioritise confirmin
 
 two options for when `map_Kd` textures are loaded from `parseMtl()`:
 
-eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. textures are guaranteed ready before the first frame. no complexity.
+eager (my preference for v1): all `map_*` paths trigger `loadImage()` calls inside `loadModel()`. in dev-2.0, `preload()` is replaced by `async setup()` - the user writes `await loadModel(...)` and `draw()` does not start until `setup()` resolves. **textures are guaranteed ready before the first frame**. no complexity.
 
 lazy: load textures on first render. reduces initial load time for large models with many materials but adds state tracking and potential one-frame flicker.
 
 i propose eager loading for this project. lazy loading can be a follow-up optimisation with a cache.
 
-the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - no race condition, no flicker. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
+the async coordination works as follows: `loadModel()` is already an `async` function. `parseMtl()` is a private module-level function with no sketch instance access - it returns raw texture path strings, exactly as it returns `texturePath` today. `fn.loadModel()`, which has sketch instance access via `this`, iterates those paths after `parseMtl()` resolves and calls `this.loadImage()` on each one, pushing the returned promise into a flat array. before `loadModel()` resolves, it awaits `Promise.all(texturePromises)`. this guarantees every slice's textures are fully decoded before `loadModel()` returns. since the user writes `let model = await loadModel(...)` inside `async setup()`, and dev-2.0's runtime awaits `setup()` before starting the draw loop, all textures are guaranteed ready before the first frame - **no race condition, no flicker**. the old `_incrementPreload`/`_decrementPreload` counter system from p5.js 1.x does not exist in dev-2.0 and is not needed here.
 
 ### 5.6 error handling
 
 three failure modes and how the implementation handles each:
 
-**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path - same behaviour as today, zero regression.
+**mtl file missing:** `parseMtl()` is only called when the obj parser finds an `mtllib` directive and the fetch succeeds. if the fetch fails, the model loads as single-material geometry using the existing single-draw path - same behaviour as today, **zero regression**.
 
-**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path - unlike today where this failure is completely silent.
+**texture path 404:** if a `loadImage()` call for a `map_*` path fails, that slice's texture field is set to `null`. the renderer already has a fallback for `map_Kd === null`: it applies `diffuseColor` as `ambientMaterial` instead. a 404'd texture degrades to a flat-coloured slice rather than a broken render. a `console.warn()` is issued with the failed path - **unlike today where this failure is completely silent**.
 
-**partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. no slice's failure affects any other slice.
+**partial mtl (mixed textured and untextured slices):** each slice is resolved independently. slices with a valid `map_Kd` get a texture. slices without one (or whose texture failed) get `diffuseColor`. **no slice's failure affects any other slice**.
 
 the diagram below shows all three layers together: parser, data, and renderer, and how they connect. the parser produces the slices, the data layer holds them privately on the geometry object, and the renderer loops through them at draw time. each layer is independently testable and the public api never changes.
 
@@ -454,7 +454,7 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 
 the buffer column is not additional time on top of 300 hours. it is already counted inside each phase's hours. for example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. the remaining 40h is the actual implementation work. every phase is structured this way. the total project hours stay at 300h.
 
-phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. the core deliverables (parser, data layer, renderer) are never at risk.
+phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. this is why their buffer is 15h each instead of 5h. if a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. if phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. if both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. **the core deliverables (parser, data layer, renderer) are never at risk**.
 
 weeks 21 and 22 are the final two weeks of the 22-week gsoc window. no new work is scheduled here. if a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. if all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
 
@@ -489,7 +489,7 @@ p5.js's mission is access and inclusion. **kit** made this explicit in the sessi
 
 sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
 
-the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. the failure is completely silent.
+the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. **the failure is completely silent**.
 
 who exactly gets blocked by this today:
 
@@ -510,7 +510,7 @@ the specific gatekeeper this project removes:
 5. blender has a learning curve of hundreds of hours and is not installed by default anywhere
 6. user gives up and abandons the 3d direction entirely
 
-after this project: step 3 renders correctly. steps 4, 5, and 6 do not happen. the creative coding on-ramp stays open.
+after this project: step 3 renders correctly. steps 4, 5, and 6 do not happen. **the creative coding on-ramp stays open**.
 
 
 ## 10. why i chose this project and what i bring to it
