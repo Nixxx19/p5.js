@@ -196,7 +196,9 @@ when parseObj() encounters a "usemtl <name>" token:
   4. continue parsing, vertices, uvs, normals go into this slice's arrays
 
 on end-of-file:
-  5. finalise the last open slice
+  5. finalise the last open slice. if slice.geometry.vertexNormals is empty
+     (obj file had no vn lines), call slice.geometry.computeNormals() — same
+     fallback the current single-geometry path applies at line 652 of loading.js
   6. if only 1 slice exists, attach nothing (use existing single-draw path)
   7. if more than 1 slices, attach array as parent._materialSlices
 ```
