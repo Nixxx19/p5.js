@@ -130,7 +130,7 @@ The difference is not subtle:
 | before (p5.js today) | after (this project) |
 |---|---|
 | <p align="center"><img src="https://github.com/user-attachments/assets/c9649c7f-2f96-4213-a6ad-08f7132688f9" /></p> | <p align="center"><img src="https://github.com/user-attachments/assets/b283bc81-e1ee-4c68-8add-6d052804121f" /></p> |
-| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. Same character, 12 material groups in the obj file, all of them collapsed into one flat grey material. Hair, skin, jacket, eyes, shoes, completely indistinguishable. `loadModel()` resolves with no error. The failure is completely silent. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. Same geometry, same user call, every material group renders with its own texture and colour. |
+| **[run it live](https://editor.p5js.org/nityamt199/sketches/me0kpve3H)** and this is what p5.js currently produces. Same character, 12 material groups collapsed into one flat grey shape. The failure is completely silent. | **[run it live](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)** and this is the poc with the slicer. Same geometry, same user call, every material group renders with its own texture and colour. |
 
 Both sketches use the exact same geometry and the exact same `model()` call. The only difference is whether the renderer knows how to loop through material slices.
 
