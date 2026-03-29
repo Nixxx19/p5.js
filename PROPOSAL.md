@@ -736,7 +736,7 @@ AI tools were used in this proposal for formatting assistance and English gramma
 
 **availability**
 
-GSoC is my primary focus this summer. i am available all days of the week, from 4:00 PM IST to 11:00 PM IST (10:30 AM UTC to 5:30 PM UTC). i am happy to adjust within that window to accommodate mentor schedules across time zones.
+i have kept this summer open specifically for this project. there are no internships, courses, or side commitments lined up — so the coding period gets my undivided attention. this is not a backup plan; i want to ship something real that p5.js users will actually benefit from, and i intend to treat it with the same seriousness i would give a full-time job.
 
-i am comfortable with both written communication and audio or video calls. no strong preference either way — whatever works best for the mentors.
+i am free every day of the week, from 4:00 PM IST to 11:00 PM IST (10:30 AM UTC to 5:30 PM UTC), and i can stretch that window when needed to sync with mentors in different time zones. i prefer to communicate early when something is unclear rather than go quiet — so the team will always know where things stand. written updates or live calls both work well for me; i will follow whatever rhythm the mentors prefer.
 
