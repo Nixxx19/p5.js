@@ -13,9 +13,13 @@
 # Section 1: Introduction
 
 **Name:** Nityam
+
 **GitHub:** [@Nixxx19](https://github.com/Nixxx19)
+
 **Discourse:** [nixxx19](https://discourse.processing.org/u/nixxx19/summary)
+
 **Discord:** nityam_33606
+
 **Pronouns:** he/him
 
 ## Short bio
@@ -63,7 +67,7 @@ what i learned is that the best way to understand a codebase is to read it with 
 
 **2. a p5.js sketch i made that i am most satisfied with**
 
-[PoC sketch](https://editor.p5js.org/nityamt199/sketches/ZmVzb02vG)
+[Raymarched Anomaly Sketch](https://editor.p5js.org/nityamt199/sketches/N7Wov74qW)
 
 the sketch i am most satisfied with is the proof of concept i built for this proposal. it renders 12 separate material slices of the same character, each with their own texture and colour, using the exact same model() call a user would write today.
 
@@ -91,7 +95,9 @@ i think open source becomes truly accessible when three things are in place:
 - the tooling has to be approachable. clear documentation and a setup process that does not break on the first try ensures people do not give up before writing their first line of code.
 - the software itself has to be built for people who do not know how it works inside. complex functionality should be invisible by default so that a beginner is not blocked by what they do not yet understand.
 
-i have emphasized the same in my proposal, complex features should happen under the hood. by prioritising zero regression architecture, a beginner can simply call loadModel() without worrying about GPU caching or breaking their existing sketches. ultimately, an open source project is accessible when it is as intuitive to use as it is welcoming to build.
+i tried my best to emphasize the same in my proposal, complex features happen under the hood. by prioritising zero regression architecture, a beginner can simply call loadModel() without worrying about GPU caching or breaking their existing sketches.
+
+ultimately, an open source project is accessible when it is as intuitive to use as it is welcoming to build.
 
 
 ## 1. synopsis
