@@ -438,6 +438,128 @@ the diagram below shows all three layers together: parser, data, and renderer, a
 
 <p align="center"><img width="568" height="577" alt="Screenshot 2026-03-22 at 4 11 16 PM" src="https://github.com/user-attachments/assets/14c64665-824a-412b-8b91-5eef523e0a49" /></p>
 
+### 3.4.7 Phase 6 — visual tests, unit tests, fixture files
+
+testing a 3d renderer is fundamentally different from testing logic code. the output is pixels produced by a gpu, and gpu output can vary slightly across machines and drivers. p5.js handles this with a screenshot comparison approach that renders a sketch headlessly and diffs pixels against a stored reference image within a configurable tolerance. phase 6 delivers three categories of tests.
+
+**visual regression tests (screenshot comparison)**
+
+the existing p5.js visual test infrastructure in `test/unit/visual/` renders sketches via a headless browser and compares the output pixel-by-pixel against reference images stored in the repository. i will add visual tests covering:
+
+- a multi-material model with 3+ distinct materials renders each part with the correct texture and colour. the reference image is captured once and committed. future runs must match within tolerance.
+- a single-material model rendered via the new code path produces output identical to the pre-gsoc reference. this is the zero-regression proof: the fallback path (`no _materialSlices`) must be pixel-identical to the old code.
+- a model with a missing texture path renders with flat `diffuseColor` per affected slice rather than crashing or going entirely grey. the `console.warn()` must be emitted.
+- a model with mixed textured and untextured slices renders correctly: textured slices show their texture, untextured slices show their `diffuseColor`.
+
+**unit tests (parser logic)**
+
+visual tests validate the final render. unit tests validate each layer independently, without a gpu.
+
+`parseMtl()` unit tests:
+- all standard mtl tokens (`Kd`, `Ka`, `Ks`, `Ns`, `d`, `illum`, `map_Kd`, `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`) are parsed and stored on the material object correctly.
+- a mtl file with only `Kd` (the current common case) still parses without error.
+- a malformed mtl file (missing values, unknown tokens) does not throw — unknown tokens are silently skipped, same as the current behaviour.
+
+`parseObj()` slicer unit tests:
+- a two-material obj produces exactly 2 entries in `_materialSlices`, each with the correct vertex count.
+- a single-material obj produces no `_materialSlices` on the parent geometry (falls through to existing single-draw path).
+- face indices in each slice are local to that slice — no global index bleed between slices.
+- uv coordinates are correctly remapped: a vertex that shared a global `vt` index with another slice gets its own per-slice local uv index.
+- `computeNormals()` is called per slice when the obj file has no `vn` lines, matching the existing fallback.
+
+**fixture obj/mtl files**
+
+the test suite requires small, deterministic fixture files committed to `test/unit/assets/`. i will create:
+
+| fixture | purpose |
+|---|---|
+| `multi_material_2.obj` + `.mtl` | minimal 2-material model (two cubes, two materials, one texture each) — primary test case |
+| `multi_material_12.obj` + `.mtl` | 12-material model matching the poc character — stress test for buffer caching |
+| `single_material.obj` + `.mtl` | 1 material — regression: must use existing single-draw path, not multi-draw |
+| `no_mtl.obj` | obj with no `mtllib` directive — regression: loads as untextured geometry, no error |
+| `missing_texture.obj` + `.mtl` | mtl references a texture path that does not exist — validates 404 degradation and `console.warn()` |
+| `no_normals.obj` + `.mtl` | obj with no `vn` lines — validates `computeNormals()` fallback per slice |
+
+the two-material fixture is hand-authored to be minimal and deterministic. the 12-material fixture is exported from blender to represent a real-world workflow. all fixture files are committed as plain text and kept under 50kb total.
+
+### 3.4.8 Phase 7 — documentation
+
+p5.js documentation is generated from inline jsdoc comments in the source files. the reference pages at p5js.org are built directly from these comments, so jsdoc changes are not cosmetic — they change what users read when they look up a function.
+
+**`loadModel()` — `src/webgl/loading.js`**
+
+the current jsdoc for `loadModel()` says nothing about material files. a user reading the reference today has no way to know that `.mtl` files are supported at all, let alone what the current limitations are. after this project, the documentation needs to:
+
+- clearly state that multi-material `.obj` files with associated `.mtl` files are fully supported.
+- document that all textures referenced in the `.mtl` file are loaded automatically — the user does not need to call `loadImage()` separately.
+- document the `async setup()` pattern: the user should `await loadModel(...)` inside `async setup()` so that all textures are resolved before `draw()` starts.
+- document graceful degradation: if the `.mtl` file is missing or a texture path is invalid, `loadModel()` still resolves successfully — it does not throw.
+- include a runnable reference example showing a multi-material model loading correctly with one line of user code.
+
+**`model()` — `src/core/p5.Renderer3D.js`**
+
+the current jsdoc for `model()` documents a single geometry argument. after the change, `model()` transparently handles both single and multi-material geometry. the documentation update:
+
+- makes clear that `model()` works identically for single and multi-material models — the call signature does not change.
+- notes that material and texture state from the `.mtl` file is applied automatically per material group. the user does not need to call `texture()` or `specularMaterial()` manually before calling `model()` when using a loaded `.obj` file.
+
+**`buildGeometry()` — `src/core/p5.Renderer3D.js`**
+
+after phase 5, `buildGeometry()` can capture material boundaries automatically when `texture()` or `specularMaterial()` is called mid-draw. the documentation update:
+
+- documents the new behaviour with a code example showing two materials inside one `buildGeometry()` call.
+- notes that the resulting geometry can be passed directly to `model()` and renders correctly.
+
+**reference page examples**
+
+each reference page in p5.js includes a live runnable example embedded in the page. i will write examples for all three functions that can be run directly in the p5.js web editor. the examples will use publicly hosted texture images so they work without any local file setup. the `loadModel()` example will load a real multi-material model hosted at a stable url and demonstrate the before/after difference in a single sketch.
+
+### 3.4.9 Phase 8 — api parity audit, edge cases, performance & follow-up issues
+
+phase 8 is not a cleanup phase. it is a deliberate audit pass that treats the implementation as a black box and systematically tests every assumption made during development. it is also where the project formally hands off unfinished work to the wider community through github issues.
+
+**api parity audit**
+
+**dave** ([@davepagurek](https://github.com/davepagurek))'s core requirement was that `model()` must behave identically for single and multi-material geometry from the user's perspective. the audit verifies this across every context where `model()` can be called:
+
+- inside `push()`/`pop()`: material state set before `model()` must be fully restored after. verified with a sketch that sets `texture(myTex)`, calls `model(multiMaterial)`, then draws another shape that must still use `myTex`.
+- with the `count` parameter (webgl2 instanced rendering): `model(geom, 12)` must work for multi-material geometry the same way it works for single-material geometry.
+- with `orbitControl()`: the multi-draw loop must not interfere with the camera transform applied before rendering.
+- inside another `buildGeometry()` call: `model()` called inside a `buildGeometry()` callback must add the geometry correctly regardless of whether it has `_materialSlices`.
+- with `lights()`, `directionalLight()`, `pointLight()`: lighting must apply correctly to each slice, not just the first one.
+
+**edge case testing**
+
+beyond the fixture files from phase 6, the audit covers edge cases that are hard to anticipate during implementation:
+
+- obj with `usemtl` referencing a material name not defined in the `.mtl` file. the slicer must handle a missing material lookup gracefully — fall back to default material rather than throwing.
+- obj with duplicate `usemtl` names (same material used in two non-contiguous face groups). each occurrence creates its own slice. the result is two slices with the same `materialProfile` but separate vertex arrays. this is correct and intentional — the gpu needs separate draw calls for non-contiguous geometry.
+- mtl file with windows-style path separators (`\`) in texture paths. `path.normalize()` or equivalent must handle both unix and windows separators since artists export from different operating systems.
+- very large model (100+ material groups): gpu buffer cache must handle 100+ separate `gid` entries without memory issues. the `_getOrMakeCachedBuffers()` function uses a hash map keyed on `gid` — this scales linearly and has no known upper limit, but it should be verified empirically.
+- model rendered inside `pg.drawingContext` (a `p5.Graphics` object): the renderer instance is different from the main canvas renderer. the multi-draw path must work correctly in this context since users frequently render models to offscreen graphics buffers.
+
+**performance**
+
+the per-slice architecture introduces `n` gpu buffer cache lookups and `n` draw calls per frame, where `n` is the number of material groups. for typical models (5–20 materials), this is negligible. for extreme cases (100+ materials), it is worth measuring.
+
+i will benchmark frame rate for a 12-slice model at 60fps against a baseline single-material model across three environments: chrome on desktop, firefox on desktop, and safari on mac. if any environment shows more than 10% frame rate regression for a 12-slice model compared to a single-material model, i will investigate whether the buffer cache lookup is the bottleneck or whether the draw call overhead itself is the issue.
+
+the gpu buffer upload (via `_getOrMakeCachedBuffers()`) happens exactly once per slice — on the first frame after `loadModel()` resolves. subsequent frames only issue draw calls against already-uploaded buffers. this is the same behaviour as a single geometry today. the audit will include a frame counter that confirms no re-upload happens on frame 2 and beyond.
+
+**follow-up github issues**
+
+before gsoc ends, i will file the following github issues to formally track work that is out of scope for this project but directly adjacent to it:
+
+| issue | description |
+|---|---|
+| `map_Ks` shader binding | specular map parsed and stored in `materialProfile` but not bound to a shader uniform. requires adding a `uSpecularSampler` uniform to `src/webgl/shaders/` and wiring it in `_setFillUniforms()`. |
+| `map_Bump` / normal mapping | bump/normal map parsed and stored but not applied. requires a `uNormalSampler` uniform and a normal-mapping calculation in the fragment shader. significant shader work. |
+| lazy texture loading | eager loading is simple and correct for v1. lazy loading (load on first render) reduces startup time for models with many materials. requires a `textureLoaded` flag per slice and a deferred `loadImage()` call. |
+| pbr materialProfile extension | `metalness`, `roughness`, and `ao` are not in the classic mtl spec but are present in gltf and modern pipelines. the materialProfile schema should be extended to support these once gltf loading is on the roadmap. |
+| gltf format support | gltf is the modern replacement for obj/mtl, with built-in pbr materials. a separate `loadModel()` code path for `.gltf` files would reuse the `_materialSlices` architecture established by this project. |
+
+each issue will include a link back to the relevant section of this proposal so future contributors have full context on the design decisions already made.
+
 ## 3.5 proof of concept
 
 i built a working poc to validate all three layers of this architecture before writing this proposal. you can run it here:
@@ -647,9 +769,9 @@ the gsoc idea page lists this as 175h or 300h. i am proposing 300h because:
 | Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.6 | week 9-11 | 50h | 15h |
 | community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. open for community feedback before visual testing phase begins. | end of week 11 | - | - |
 | Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | week 12-13 | 35h | 5h |
-| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files | week 14-16 | 40h | 5h |
-| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples | week 17-18 | 25h | 5h |
-| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features | week 19-20 | 20h | 5h |
+| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.7 | week 14-16 | 40h | 5h |
+| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.8 | week 17-18 | 25h | 5h |
+| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features → §3.4.9 | week 19-20 | 20h | 5h |
 | **core total** | | **week 1-20** | **300h** | **60h** |
 | overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. if on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
 | **gsoc total** | | **22 weeks** | **300h** | - |
