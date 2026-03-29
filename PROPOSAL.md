@@ -4,7 +4,7 @@
 
 **project size:** 300 hours
 
-**mentors:** **diya** solanki & **claudine** chen
+**mentors:** **Diya Solanki** ([@diyaayay](https://github.com/diyaayay)) & **Claudine Chen** ([@mingness](https://github.com/mingness))
 
 
 ## 1. synopsis
@@ -64,15 +64,15 @@ key findings:
 
 the proposal you are reading is not the first version. it went through real iterations based on direct mentor feedback, community-reported issues, and public discourse conversations, and that process is worth documenting because it changed the architecture.
 
-when i first shared a prototype sketch with **kit**, she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
+when i first shared a prototype sketch with **kit** ([@ksen0](https://github.com/ksen0)), she noticed it was running on p5.js 1.x. her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. i went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. that is where i found `buildGeometry(callback)` as the replacement. i rebuilt the entire poc from scratch using this api. that process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. that same sketch also helped **kit** identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. it is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
 
-when i asked **diya** about the approach, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
+when i asked **diya** ([@diyaayay](https://github.com/diyaayay)) about the approach, she pushed back on any design that would expose a new public class. her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. that is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
-**dave** confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
+**dave** ([@davepagurek](https://github.com/davepagurek)) confirmed the overall direction was right and added one more constraint: api parity. `model()` must behave identically for single and multi-material geometry. that became the core test for every architectural decision in section 4.
 
 **diya** also asked directly whether each slice would carry its own complete material object, including `map_Ks`, `map_Bump`, and other mtl texture maps, not just the diffuse texture. that question is why section 5.1 defines a full `materialProfile` schema rather than just storing a single texture reference per slice.
 
-**connie** mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
+**connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. that framing helped me make sure all three are visible in this proposal.
 
 beyond the mentors, the community has independently reported this same failure repeatedly. issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. this proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library.
 
