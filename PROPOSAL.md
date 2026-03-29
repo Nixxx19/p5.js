@@ -760,27 +760,60 @@ The gsoc idea page lists this as 175h or 300h. I am proposing 300h because:
 3. After the feedback I received, I plan to allocate time to read all geometry-related references and file issues for unimplemented apis so other contributors can continue the work after gsoc.
 4. The `buildGeometry()` integration (phase 5) is an extra deliverable not in the original spec.
 
-| phase | work | weeks | hours | buffer (hrs) |
+## 4.2 Phase overview
+
+| Phase | Work | Weeks | Hours | Buffer |
 |---|---|---|---|---|
-| Phase 1 | community bonding: study all geometry apis, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from **Diya** ([@diyaayay](https://github.com/diyaayay)), **Claudine** ([@mingness](https://github.com/mingness)) → §3.4.1 | week 1-2 | 40h | 5h |
-| Phase 2 | extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.9 | week 3-5 | 35h | 5h |
-| Phase 3 | rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.3, §3.4.9 | week 6-8 | 55h | 15h |
-| community checkpoint | post working slicer demo sketch on Discourse and Discord for community testing. Gather feedback before renderer work begins. | end of week 8 | - | - |
-| Phase 4 | extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.9 | week 9-11 | 50h | 15h |
-| community checkpoint | post full multi-material render demo on Discourse with real sketchfab model. Open for community feedback before visual testing phase begins. | end of week 11 | - | - |
-| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | week 12-13 | 35h | 5h |
-| Phase 6 | visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.6 | week 14-16 | 40h | 5h |
-| Phase 7 | docs: jsdoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.7 | week 17-18 | 25h | 5h |
-| Phase 8 | api parity audit, edge cases, performance, create follow-up issues for unimplemented features → §3.4.8 | week 19-20 | 20h | 5h |
-| **core total** | | **week 1-20** | **300h** | **60h** |
-| overflow + stretch | if any phase runs over, absorb up to 25h of slippage here. If on schedule, stretch goal priority: (1) better error messages when map_Kd path is missing, (2) additional test fixtures with real sketchfab models, (3) pbr property stubs on materialProfile for follow-on contributors | week 21-22 | up to 25h | - |
-| **gsoc total** | | **22 weeks** | **300h** | - |
+| Phase 1 | Community bonding: study all geometry APIs, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from mentors → §3.4.1 | 1-2 | 40h | 5h |
+| Phase 2 | Extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.9 | 3-5 | 35h | 5h |
+| Phase 3 | Rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.3, §3.4.9 | 6-8 | 55h | 15h |
+| Phase 4 | Extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.9 | 9-11 | 50h | 15h |
+| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | 12-13 | 35h | 5h |
+| Phase 6 | Visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.6 | 14-16 | 40h | 5h |
+| Phase 7 | Docs: JSDoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.7 | 17-18 | 25h | 5h |
+| Phase 8 | API parity audit, edge cases, performance, follow-up issues → §3.4.8 | 19-20 | 20h | 5h |
+| **Core total** | | **Weeks 1-20** | **300h** | **60h** |
+| Overflow / stretch | Absorb slippage or pursue: (1) better error messages for missing `map_Kd`, (2) additional real-model fixtures, (3) PBR property stubs on `materialProfile` | 21-22 | up to 25h | - |
 
-The buffer column is not additional time on top of 300 hours. It is already counted inside each phase's hours. For example, phase 3 is allocated 55h total, out of which 15h is breathing room for code review cycles, unexpected edge cases, and pr iteration. The remaining 40h is the actual implementation work. Every phase is structured this way. The total project hours stay at 300h.
+The buffer column is not additional time on top of 300 hours. It is already counted inside each phase's hours. Phase 3 is allocated 55h total, of which 15h is breathing room for code review cycles, unexpected edge cases, and PR iteration. Every phase is structured this way. The total stays at 300h.
 
-Phases 3 and 4 carry the most risk since the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. This is why their buffer is 15h each instead of 5h. If a phase finishes under estimate, the saved hours roll into phase 6 since testing can always absorb more time. If phase 3 still overruns despite the buffer, phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer - it is an extra deliverable beyond the original spec and can ship as a follow-up pr without affecting the core multi-material fix. If both phases 3 and 4 overrun, phase 6 testing is reduced to core regression tests only - the visual screenshot comparison suite is deferred to a follow-up pr. **the core deliverables (parser, data layer, renderer) are never at risk**.
+Phases 3 and 4 carry the most risk because the vertex deduplication logic and the renderer buffer cache both have non-obvious interactions with the rest of the geometry pipeline. If a phase finishes under estimate, saved hours roll into Phase 6, since testing can always absorb more time. If Phase 3 still overruns, Phase 5 (`buildGeometry()` boundary detection) is the first candidate to defer since it is an extra deliverable beyond the original spec. **The core deliverables (parser, data layer, renderer) are never at risk.**
 
-Weeks 21 and 22 are the final two weeks of the 22-week gsoc window. No new work is scheduled here. If a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. If all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
+## 4.3 Community feedback plan
+
+I will post two public community checkpoints during the coding period, both on the p5.js Discourse forum and the Discord server, and cross-link them on the relevant GitHub issue (#6924).
+
+**Checkpoint 1 — end of week 8 (after Phase 3):** I will post a runnable p5.js web editor sketch demonstrating the working slicer. Community members can fork the sketch and test it with their own models by swapping the geometry arrays. I will ask specifically: does your model produce the correct number of slices? Are any material boundaries merged incorrectly? Feedback collected here directly shapes Phase 6. Any model that fails to slice correctly becomes a fixture file. Any edge case I had not anticipated gets added to Phase 8's testing checklist. If the feedback reveals a structural problem in the slicer, Phase 4's 15h buffer absorbs the fix before renderer work begins.
+
+**Checkpoint 2 — end of week 11 (after Phase 4):** I will post a full end-to-end render demo using a real multi-material model from Sketchfab, showing the before and after in a single sketch. I will ask: does it render correctly in your browser? Does it work with your own Blender or Tinkercad export? Feedback here feeds directly into Phase 8's edge case list. Models that fail to render correctly become additional fixture files or audit targets. Any performance concern raised by the community gets added to the Phase 8 benchmark.
+
+Between checkpoints, I will stay active in the p5.js Discord #webgl channel and reply to any questions on the GitHub issue thread. I prefer to communicate early when something is unclear, so mentors and the community will always know where the implementation stands.
+
+## 4.4 Week-by-week timeline
+
+| Week | Phase | Minimum outcome | Stretch goal if on schedule |
+|---|---|---|---|
+| 1 | Phase 1 | Read all geometry APIs in dev-2.0, trace full pipeline from `loadModel()` to `gl.drawElements()`, set up dev environment | Read processing4's `PShapeOBJ.java` and draft `materialProfile` schema |
+| 2 | Phase 1 | Architecture doc finalised, design decisions 1-5 presented to mentors for sign-off (§3.4.1) | First `parseMtl()` token list drafted and shared with mentors |
+| 3 | Phase 2 | `parseMtl()` extended to parse all mtl tokens: `Kd`, `Ka`, `Ks`, `Ns`, `d`, `illum`, `map_Kd`, `map_Ka`, `map_Ks`, `map_Bump` | `materialProfile` schema reviewed and approved by mentors |
+| 4 | Phase 2 | `loadImage()` calls wired for all `map_*` paths inside `loadModel()`, `Promise.all()` awaited correctly | Unit tests for `parseMtl()` token parsing passing |
+| 5 | Phase 2 | `parseMtl()` PR-ready: all error modes handled (missing mtl file, 404 texture path) (§3.4.9) | `parseObj()` slicer design drafted |
+| 6 | Phase 3 | `parseObj()` `usemtl` boundary detection working, vertex data bucketed per material slice | UV coordinate assignment correct per slice |
+| 7 | Phase 3 | Face-index localisation per slice complete, normals and UVs correct, `_materialSlices` array assembled on `p5.Geometry` | All existing single-material obj fixtures still pass (zero regression verified) |
+| 8 | Phase 3 + checkpoint | `parseObj()` slicer complete and verified with real Blender and Sketchfab exports. **Community checkpoint 1**: post slicer demo on Discourse and Discord | Incorporate early community feedback, add any reported failure cases as fixture files |
+| 9 | Phase 4 | `Renderer3D.model()` multi-draw loop in place, iterating `_materialSlices` | Per-slice `diffuseColor` and `specularColor` binding working |
+| 10 | Phase 4 | Per-slice texture binding (`map_Kd`) working, GPU buffer cache per slice in place | `push()`/`pop()` material state restoration verified for multi-material models |
+| 11 | Phase 4 + checkpoint | Full end-to-end multi-material render working with real obj/mtl files. **Community checkpoint 2**: post full demo on Discourse with a real Sketchfab model | Incorporate feedback, fix any community-reported rendering edge cases within Phase 4 buffer |
+| 12 | Phase 5 | `GeometryBuilder` material boundary detection logic in place, detecting `texture()` and `specularMaterial()` changes mid-draw | `_materialSlices` produced correctly from `buildGeometry()` |
+| 13 | Phase 5 | `buildGeometry()` integration complete, `model(geom)` renders procedural multi-material geometry correctly | Unit tests for boundary detection passing, PR ready for review |
+| 14 | Phase 6 | Visual regression test infrastructure set up, first reference screenshot captured and committed for a multi-material model | 3+ visual tests covering different configurations (3 materials, 12 materials, untextured slices) |
+| 15 | Phase 6 | Unit tests for `parseMtl()` and `parseObj()` slicer complete, all fixture files passing | Fixture files for all 3 error modes (missing mtl, 404 texture, partial mtl) |
+| 16 | Phase 6 | All visual and unit tests passing on CI, all error handling paths covered | Additional fixture files from real Sketchfab and Blender exports |
+| 17 | Phase 7 | JSDoc for `loadModel()` updated: multi-material support, texture loading, `async setup()` pattern, graceful degradation | JSDoc for `model()` updated with multi-material behaviour note |
+| 18 | Phase 7 | JSDoc for `buildGeometry()` updated, runnable reference page examples written for all 3 functions | Discourse/Discord post announcing the feature with a tutorial sketch |
+| 19 | Phase 8 | API parity audit complete across `push()`/`pop()`, instanced rendering, `orbitControl()`, `lights()`, `p5.Graphics` | Edge case testing: non-contiguous `usemtl`, Windows path separators, 100+ material groups |
+| 20 | Phase 8 | Performance benchmark complete (12-slice model across Chrome, Firefox, Safari), 5 follow-up GitHub issues filed with full context | Final PR polished and code review feedback addressed |
+| 21-22 | Overflow | Absorb any slippage from earlier phases without risk to final deliverables | If on schedule: better error messages for missing `map_Kd`, additional real-model fixtures, or PBR property stubs on `materialProfile` |
 
 
 
