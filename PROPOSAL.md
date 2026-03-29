@@ -36,17 +36,17 @@ this project fixes that at the root. it rewrites the obj parser to preserve mate
 
 ## 1.3 Interests & skills
 
-**what i find most interesting about this project**
+### 1.3.1 what i find most interesting about this project
 
 what pulls me in is that the fix does not live in one place. it touches the parser, the data layer, and the GPU renderer all at once. most bugs are isolated. this one is not. you have to understand how an OBJ file encodes material boundaries, how that data survives the parse, and how WebGL actually binds textures at draw time before you can even describe what is broken. i genuinely love that kind of challenge. when i first started reading the source it took me a while, but the moment it clicked, everything started connecting. the existing PRs, the old issues, the design decisions that seemed unrelated at first — they all started pointing at the same root cause. it felt less like reading code and more like following a trail where every clue was already there. i find that kind of thing really fun. i cannot fake my way through it and i do not want to.
 
-**what i bring**
+### 1.3.2 what i bring
 
 technically i bring a systems background that makes me comfortable reading unfamiliar source code and tracing data through pipelines before touching anything. i have worked in Rust, TypeScript, and distributed systems long enough that reading a JavaScript renderer and following a buffer through it feels natural to me. i also bring real 3D context from my Blender coursework. i am not guessing at what artists need from this fix. i have hit the same wall myself.
 
 non-technically i bring patience, good communication, and a dual perspective that i think is genuinely rare. i am both the person this bug hurt and the artist fixing it. i have been on the artist side — spending hours texturing a character in Blender and watching it come out wrong. i know exactly what that frustration feels like. that makes me care about getting this right in a way that goes beyond the technical challenge. i communicate clearly when something is complicated, which i think matters in open source where reviewers need to trust your reasoning not just your code. and i am honest about what i do not know. i do not oversell what i have built or pretend a proof of concept is a finished solution. i think that kind of straightforwardness saves everyone time.
 
-**what i want to develop**
+### 1.3.3 what i want to develop
 
 i want to learn how to write visual regression tests for 3D rendering. i know how to test backend systems and APIs but testing what a GPU actually draws is something i have not done at a production level and i want to. i also want to experience a full open source PR review cycle with senior maintainers on a widely used library. i have shipped PRs before but going through the full cycle with proper review, iteration, and merge on something this architectural is a different level and i am here for that. on the technical side i want to go deeper into GLSL and the shader pipeline because right now my WebGL knowledge stops at the JavaScript layer and i want to go further.
 
