@@ -9,7 +9,7 @@
 
 ## 1. synopsis
 
-when a beginner downloads a 3d model from sketchfab and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
+when a beginner downloads a 3d model from sketchfab, exports one from blender, maya, or tinkercad, and types `loadModel('robot.obj')` in p5.js, they expect their robot to look like the preview, textured, coloured per part, alive. instead they get a flat broken shape. the reason is a single architectural limitation: p5.js currently flattens all obj geometry into one vertex array and issues a single `gl.drawElements()` call with one texture bound. multi-material models are **silently destroyed at parse time**.
 
 the difference is not subtle:
 
@@ -78,7 +78,7 @@ beyond the mentors, the community has independently reported this same failure r
 
 ### 2.4 my existing contribution
 
-i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. the `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender and sketchfab exports to throw instead of loading gracefully. i found this bug while reading `parseObj()` specifically to understand the code i would be working on for this project. it was not a separate investigation, it came directly out of the deep read i did for the proposal. this is also why i know exactly where the slicer needs to be inserted in that function.
+i have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. the `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. i found this bug while reading `parseObj()` specifically to understand the code i would be working on for this project. it was not a separate investigation, it came directly out of the deep read i did for the proposal. this is also why i know exactly where the slicer needs to be inserted in that function.
 
 
 ## 3. the problem, stated precisely
@@ -489,7 +489,7 @@ function draw() {
 
 p5.js's mission is access and inclusion. **kit** ([@ksen0](https://github.com/ksen0)) made this explicit in the session: "all new proposals should make the argument of how the new feature improves access and inclusion." this project has a direct and concrete answer to that.
 
-sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today.
+sketchfab is the world's largest free 3d asset library. it has millions of downloadable models spanning art, culture, science, education, and games. the majority of those models are exported as obj plus mtl, the most common interchange format. every single one of those models has multiple materials. and every single one of them renders as a flat grey blob in p5.js today. the same is true for any model exported from blender, maya, or tinkercad - the obj/mtl format is universal across all 3d tools and p5.js breaks all of them the same way.
 
 the problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. the user did everything right. **the failure is completely silent**.
 
@@ -497,15 +497,15 @@ who exactly gets blocked by this today:
 
 **students in 3d and animation courses.** this is my own situation. i take an elective where we model, rig, and texture characters in blender and then bring them into creative coding environments. every student in that class who tries to use p5.js hits the same wall. the character they spent hours texturing comes out grey and flat. p5.js is supposed to be the gentle on-ramp to creative coding. right now it is a dead end for anyone coming from a 3d background.
 
-**educators building 3d assignments.** a teacher who designs a unit around loading and animating a sketchfab model cannot know in advance that every model will break. the failure is silent and the fix (baking textures in blender) requires software the students do not have and a skill set that takes hundreds of hours to learn. the assignment has to be redesigned or abandoned.
+**educators building 3d assignments.** a teacher who designs a unit around loading and animating a sketchfab, blender, or maya model cannot know in advance that every model will break. the failure is silent and the fix (baking textures in blender) requires software the students do not have and a skill set that takes hundreds of hours to learn. the assignment has to be redesigned or abandoned.
 
-**artists and makers who are not software engineers.** p5.js is specifically designed for people who create, not people who debug rendering pipelines. an artist who downloads a model from sketchfab and calls `loadModel()` is doing exactly what the documentation says to do. the broken result looks like their fault. many of them conclude p5.js cannot do 3d and stop.
+**artists and makers who are not software engineers.** p5.js is specifically designed for people who create, not people who debug rendering pipelines. an artist who downloads a model from sketchfab or exports one from blender, maya, or tinkercad and calls `loadModel()` is doing exactly what the documentation says to do. the broken result looks like their fault. many of them conclude p5.js cannot do 3d and stop.
 
 **beginners on the p5.js web editor.** p5.js 2.0 becomes the default in the web editor in august 2026. every beginner who opens the editor after that date and tries 3d will hit this wall on day one, with no error message and no path forward.
 
 the specific gatekeeper this project removes:
 
-1. user finds a model on sketchfab (free, one click download)
+1. user finds a model on sketchfab or exports one from blender, maya, or tinkercad
 2. loads it in p5.js with `loadModel()` (one line, as documented)
 3. model renders broken, no error, user is confused
 4. user searches and finds they need to bake textures in blender
