@@ -12,16 +12,6 @@
 
 # Section 1: Introduction
 
-**Name:** Nityam
-
-**GitHub:** [@Nixxx19](https://github.com/Nixxx19)
-
-**Discourse:** [nixxx19](https://discourse.processing.org/u/nixxx19/summary)
-
-**Discord:** nityam_33606
-
-**Pronouns:** he/him
-
 ## 1.1 Short bio
 
 I am a third-year computer science engineering student at Thapar University, Patiala. I am a systems-oriented developer and most of my work sits in Rust, TypeScript, and distributed systems, spanning multi-agent decision engines, CI/CD infrastructure, and real-time API services. I read research before I write code and I treat every codebase I work in like a production system.
