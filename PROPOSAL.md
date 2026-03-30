@@ -455,9 +455,9 @@ let myModel = buildGeometry(() => {
 model(myModel);              // renders both slices correctly
 ```
 
-This is detected internally by diffing material state in `GeometryBuilder`. This is ambitious but achievable and extends the fix from imported models to procedurally built ones.
+The mechanism: `buildGeometry(callback)` already runs the callback against a temporary renderer instance. I will add a material-state snapshot to that renderer — a lightweight object tracking the current `texture`, `specularMaterial`, `diffuseMaterial`, and `fill` values. Before each draw call inside the callback, the renderer checks whether the snapshot has changed since the last geometry was recorded. If it has, a new slice boundary is opened: the current vertex count becomes the start index of the next slice, and the previous snapshot becomes the `materialProfile` for the completed slice. When the callback finishes, `buildGeometry()` assembles `_materialSlices` on the returned `p5.Geometry` using the same schema defined in [§3.4.1](#341-phase-1-community-bonding-design-decisions). `Renderer3D.model()` then handles the result identically to a multi-material OBJ — no separate render path, no new public API.
 
-Since this touches the behaviour of an existing api, I will prioritise confirming alignment with the core team during community bonding before writing any production code for this phase.
+Since this modifies the behaviour of an existing API, I will confirm the exact diffing strategy with the core team during community bonding before writing any production code for this phase.
 
 ### 3.4.6 Phase 6: visual tests, unit tests, fixture files
 
@@ -797,9 +797,9 @@ I have contributed across the full p5.js ecosystem before this gsoc application,
 #### p5.js web editor (13 merged PRs)
 The web editor is where beginners actually write their p5.js code. I have 13 merged contributions there covering security fixes (oauth, bcrypt, mass assignment vulnerabilities), performance (502 timeout on project downloads, zip streaming), accessibility (aria-live on form errors), and ux (signup flow when email verification fails). The range matters because it shows I understand the environment where the user experiences this bug, not just the renderer layer where it originates.
 
-Some of the specific merged prs: #3968 (private assets authorization), #3967 (input validation), #3966 (google oauth email validation), #3897 (async bcrypt), #3892 (github oauth fix), #3884 (aria-live accessibility), #3862 (zip download timeout).
+Three are worth noting specifically: **#3968** fixed a mass-assignment vulnerability in private asset authorization — understanding how user data flows end-to-end from the editor backend is directly relevant to how p5.js loads external assets like textures; **#3862** fixed a 502 timeout on large project zip downloads by streaming the response instead of buffering it in memory, a real performance regression that was silently affecting users with large sketch libraries; **#3884** added `aria-live` announcements to signup form errors, because p5.js takes access seriously and I want to work in a community where I understand why. The remaining ten cover input validation, oauth hardening, and bcrypt migration.
 
-That is 15 prs across the core library, the webgl renderer, and the editor. I have genuine familiarity with the codebase and the contribution workflow.
+That is 15 PRs across the core library, the webgl renderer, and the editor. I have genuine familiarity with the codebase and the contribution workflow.
 
 ### Other technical background
 - Full pipeline trace: `loadModel()` to `parseMtl()`, `parseObj()`, `p5.Geometry`, `Renderer3D.model()`, `_drawBuffers()`, `gl.drawElements()`, all read in source not docs
