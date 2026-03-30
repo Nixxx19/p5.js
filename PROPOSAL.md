@@ -36,8 +36,6 @@ Claudine Chen ([@mingness](https://github.com/mingness))
 
 ---
 
-<div style="page-break-after: always;"></div>
-
 # Section 1: Introduction
 
 **Name:** Nityam
@@ -826,14 +824,14 @@ The gsoc idea page lists this as 175h or 300h. I am proposing 300h because:
 
 | Phase | Work | Weeks | Hours | Buffer |
 |---|---|---|---|---|
-| Phase 1 | Community bonding: study all geometry APIs, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from mentors → §3.4.1 | 1-2 | 40h | 5h |
-| Phase 2 | Extend `parseMtl()`: all mtl tokens and texture loading pipeline → §3.4.2, §3.4.9 | 3-5 | 35h | 5h |
-| Phase 3 | Rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → §3.4.3, §3.4.9 | 6-8 | 55h | 15h |
-| Phase 4 | Extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → §3.4.4, §3.4.9 | 9-11 | 50h | 15h |
-| Phase 5 | `buildGeometry()` mid-draw material boundary detection → §3.4.5 | 12-13 | 35h | 5h |
-| Phase 6 | Visual tests (screenshot comparison), unit tests, fixture obj/mtl files → §3.4.6 | 14-16 | 40h | 5h |
-| Phase 7 | Docs: JSDoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → §3.4.7 | 17-18 | 25h | 5h |
-| Phase 8 | API parity audit, edge cases, performance, follow-up issues → §3.4.8 | 19-20 | 20h | 5h |
+| Phase 1 | Community bonding: study all geometry APIs, read processing4's PShapeOBJ.java, draft architecture doc, get sign-off from mentors → [§3.4.1](#341-phase-1-community-bonding-design-decisions) | 1-2 | 40h | 5h |
+| Phase 2 | Extend `parseMtl()`: all mtl tokens and texture loading pipeline → [§3.4.2](#342-phase-2-extend-parsemtl), [§3.4.9](#349-error-handling-failure-modes) | 3-5 | 35h | 5h |
+| Phase 3 | Rewrite `parseObj()` slicer: per-material vertex buckets, uv mapping per slice, face-index localisation → [§3.4.3](#343-phase-3-rewrite-parseobj-slicer), [§3.4.9](#349-error-handling-failure-modes) | 6-8 | 55h | 15h |
+| Phase 4 | Extend `Renderer3D.model()`: multi-draw loop, per-slice material binding, buffer cache per slice → [§3.4.4](#344-phase-4-extend-renderer3dmodel), [§3.4.9](#349-error-handling-failure-modes) | 9-11 | 50h | 15h |
+| Phase 5 | `buildGeometry()` mid-draw material boundary detection → [§3.4.5](#345-phase-5-buildgeometry-integration) | 12-13 | 35h | 5h |
+| Phase 6 | Visual tests (screenshot comparison), unit tests, fixture obj/mtl files → [§3.4.6](#346-phase-6-visual-tests-unit-tests-fixture-files) | 14-16 | 40h | 5h |
+| Phase 7 | Docs: JSDoc for `loadModel()`, `model()`, `buildGeometry()`; reference page examples → [§3.4.7](#347-phase-7-documentation) | 17-18 | 25h | 5h |
+| Phase 8 | API parity audit, edge cases, performance, follow-up issues → [§3.4.8](#348-phase-8-api-parity-audit-edge-cases-performance-follow-up-issues) | 19-20 | 20h | 5h |
 | **Core total** | | **Weeks 1-20** | **300h** | **60h** |
 | Overflow / stretch | Absorb slippage or pursue: (1) better error messages for missing `map_Kd`, (2) additional real-model fixtures, (3) PBR property stubs on `materialProfile` | 21-22 | up to 25h | - |
 
@@ -858,10 +856,10 @@ Between checkpoints, I will stay active in the p5.js Discord #webgl channel and 
 | Week | Phase | Minimum outcome | Stretch goal if on schedule |
 |---|---|---|---|
 | 1 | Phase 1 | Read all geometry APIs in dev-2.0, trace full pipeline from `loadModel()` to `gl.drawElements()`, set up dev environment | Read processing4's `PShapeOBJ.java` and draft `materialProfile` schema |
-| 2 | Phase 1 | Architecture doc finalised, design decisions 1-5 presented to mentors for sign-off (§3.4.1) | First `parseMtl()` token list drafted and shared with mentors |
+| 2 | Phase 1 | Architecture doc finalised, design decisions 1-5 presented to mentors for sign-off ([§3.4.1](#341-phase-1-community-bonding-design-decisions)) | First `parseMtl()` token list drafted and shared with mentors |
 | 3 | Phase 2 | `parseMtl()` extended to parse all mtl tokens: `Kd`, `Ka`, `Ks`, `Ns`, `d`, `illum`, `map_Kd`, `map_Ka`, `map_Ks`, `map_Bump` | `materialProfile` schema reviewed and approved by mentors |
 | 4 | Phase 2 | `loadImage()` calls wired for all `map_*` paths inside `loadModel()`, `Promise.all()` awaited correctly | Unit tests for `parseMtl()` token parsing passing |
-| 5 | Phase 2 | `parseMtl()` PR-ready: all error modes handled (missing mtl file, 404 texture path) (§3.4.9) | `parseObj()` slicer design drafted |
+| 5 | Phase 2 | `parseMtl()` PR-ready: all error modes handled (missing mtl file, 404 texture path) ([§3.4.9](#349-error-handling-failure-modes)) | `parseObj()` slicer design drafted |
 | 6 | Phase 3 | `parseObj()` `usemtl` boundary detection working, vertex data bucketed per material slice | UV coordinate assignment correct per slice |
 | 7 | Phase 3 | Face-index localisation per slice complete, normals and UVs correct, `_materialSlices` array assembled on `p5.Geometry` | All existing single-material obj fixtures still pass (zero regression verified) |
 | 8 | Phase 3 + checkpoint | `parseObj()` slicer complete and verified with real Blender and Sketchfab exports. **Community checkpoint 1**: post slicer demo on Discourse and Discord | Incorporate early community feedback, add any reported failure cases as fixture files |
