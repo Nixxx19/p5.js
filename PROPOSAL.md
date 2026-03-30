@@ -1,10 +1,14 @@
 <div align="center">
 
-<br><br><br><br>
+<br>
 
-<img src="https://developers.google.com/open-source/gsoc/resources/downloads/GSoC-icon-192.png" width="130" alt="Google Summer of Code" /> &nbsp;&nbsp; × &nbsp;&nbsp; <img src="https://avatars.githubusercontent.com/u/1617169?v=4" width="130" alt="Processing Foundation" />
+<p align="center">
+  <img src="https://developers.google.com/open-source/gsoc/resources/downloads/GSoC-icon-192.png" width="200" />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://avatars.githubusercontent.com/u/1617169?v=4" width="230" />
+</p>
 
-<br><br><br>
+<br>
 
 # Google Summer of Code 2026
 
@@ -16,9 +20,11 @@
 
 **Project:** Full texture support for .mtl files in p5.js
 
-**Project size:** 300 hours
+**Project Size:** 300 hours  
 
-**Mentors:** Diya Solanki ([@diyaayay](https://github.com/diyaayay)) & Claudine Chen ([@mingness](https://github.com/mingness))
+**Mentors:**  
+Diya Solanki  ([@diyaayay](https://github.com/diyaayay))  
+Claudine Chen ([@mingness](https://github.com/mingness))
 
 **Organization:** Processing Foundation
 
@@ -29,6 +35,8 @@
 <div style="page-break-after: always;"></div>
 
 ---
+
+<div style="page-break-after: always;"></div>
 
 # Section 1: Introduction
 
