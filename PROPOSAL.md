@@ -87,7 +87,7 @@ Non-technically I want to learn how to break a large architectural change into r
 
 [PR #8666](https://github.com/processing/p5.js/pull/8666)
 
-The contribution I am most proud of is PR #8666 on p5.js dev-2.0. While doing the deep source read for this proposal, I found a boolean logic error at lines 655-658. The hasColoredVertices === hasColorlessVertices condition caused blender, maya, tinkercad, and sketchfab exports to crash instead of loading gracefully. I opened the fix while doing the deep source read for this proposal, not as a separate investigation.
+The contribution I am most proud of is [PR #8666](https://github.com/processing/p5.js/pull/8666) on p5.js dev-2.0. While doing the deep source read for this proposal, I found a boolean logic error at lines 655-658. The hasColoredVertices === hasColorlessVertices condition caused blender, maya, tinkercad, and sketchfab exports to crash instead of loading gracefully. I opened the fix while doing the deep source read for this proposal, not as a separate investigation.
 
 What I learned is that the best way to understand a codebase is to read it with the intention of using it, not just studying it. I was not hunting for bugs. I was following data through a pipeline. The bug appeared because I was paying attention, not because I was looking for it.
 
@@ -364,7 +364,7 @@ Draw order: slices are inserted in obj file order, which matches the artist's 3d
 
 `_makeTriangleEdges()`: in the current code, `loadModel()` calls `model._makeTriangleEdges()` on the parent geometry after `parseObj()` returns. This generates stroke geometry (line vertices, tangents, caps, joins). In the sliced design, all vertices live in sub-geometries - the parent has none - so the existing single call produces nothing. The slicer will call `_makeTriangleEdges()` on each slice's sub-geometry individually before attaching it to `_materialSlices`.
 
-`hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug pr #8666 fixes). The per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. The mixed state that causes the throw cannot occur per slice. This means the slicer also resolves the underlying condition that made pr #8666 necessary.
+`hasColoredVertices` / `hasColorlessVertices`: the current `parseObj()` tracks these two flags across all vertices and throws if both are false or both are true (the bug [pr #8666](https://github.com/processing/p5.js/pull/8666) fixes). The per-slice design eliminates this check entirely - each slice only contains vertices from one material, so they are either all-colored or all-colorless by construction. The mixed state that causes the throw cannot occur per slice. This means the slicer also resolves the underlying condition that made [pr #8666](https://github.com/processing/p5.js/pull/8666) necessary.
 
 ### 3.4.4 Phase 4: extend Renderer3D.model()
 
@@ -780,7 +780,7 @@ I take an elective in gaming and animation as part of my coursework. That course
 
 That experience is the real origin of this proposal. I am not proposing this because it looked like an interesting gsoc issue. I ran into this wall personally, in a real workflow, coming from a course that specifically teaches the pipeline this bug breaks. I know what it feels like to be on the other side of it and I know exactly which step in the pipeline swallows the material data. Every student in that class who tries to bring their blender work into p5.js hits the same wall. Fixing this means they don't have to.
 
-When I saw this listed as a gsoc project I already knew the pain point from the user side. What I did next was go read the source to understand the technical side. I read pr #6710 end to end, traced the entire pipeline from `loadModel()` down to `gl.drawElements()`, opened the dev-2.0 branch and read six files in detail. I found a real crash bug in `parseObj()` while doing that read and opened pr #8666 to fix it. By the time I started writing this proposal I had a working poc that proved the three-layer architecture was sound in dev-2.0.
+When I saw this listed as a gsoc project I already knew the pain point from the user side. What I did next was go read the source to understand the technical side. I read [pr #6710](https://github.com/processing/p5.js/pull/6710) end to end, traced the entire pipeline from `loadModel()` down to `gl.drawElements()`, opened the dev-2.0 branch and read six files in detail. I found a real crash bug in `parseObj()` while doing that read and opened [pr #8666](https://github.com/processing/p5.js/pull/8666) to fix it. By the time I started writing this proposal I had a working poc that proved the three-layer architecture was sound in dev-2.0.
 
 That combination of hitting the problem as a user, going deep into the source as a developer, and building something before proposing it is what makes me confident I can deliver this. This proposal is rooted in a deep line-by-line understanding of the current rendering pipeline.
 
@@ -789,8 +789,8 @@ That combination of hitting the problem as a user, going deep into the source as
 I have contributed across the full p5.js ecosystem before this gsoc application, not just the specific file this project touches.
 
 #### p5.js core (2 open PRs)
-- **pr #8666:** fixes the `parseObj()` crash for mixed-material obj models. In the exact file this gsoc project modifies. This is directly in the 3d/webgl rendering path.
-- **pr #8555:** fixes a browser freeze when tessellating geometry over 50k vertices. A webgl renderer fix in the same rendering layer this project works in. Both open prs are in the core 3d pipeline - not peripheral fixes.
+- **[pr #8666](https://github.com/processing/p5.js/pull/8666):** fixes the `parseObj()` crash for mixed-material obj models. In the exact file this gsoc project modifies. This is directly in the 3d/webgl rendering path.
+- **[pr #8555](https://github.com/processing/p5.js/pull/8555):** fixes a browser freeze when tessellating geometry over 50k vertices. A webgl renderer fix in the same rendering layer this project works in. Both open prs are in the core 3d pipeline - not peripheral fixes.
 
 #### p5.js web editor (13 merged PRs)
 The web editor is where beginners actually write their p5.js code. I have 13 merged contributions there covering security fixes (oauth, bcrypt, mass assignment vulnerabilities), performance (502 timeout on project downloads, zip streaming), accessibility (aria-live on form errors), and ux (signup flow when email verification fails). The range matters because it shows I understand the environment where the user experiences this bug, not just the renderer layer where it originates.
@@ -801,7 +801,7 @@ That is 15 prs across the core library, the webgl renderer, and the editor. I ha
 
 ### Other technical background
 - Full pipeline trace: `loadModel()` to `parseMtl()`, `parseObj()`, `p5.Geometry`, `Renderer3D.model()`, `_drawBuffers()`, `gl.drawElements()`, all read in source not docs
-- Referenced pr #6710 (original mtl implementation by **Diya** ([@diyaayay](https://github.com/diyaayay)) and **Dave** ([@davepagurek](https://github.com/davepagurek))), issue #6924 (formal feature request tracking what is missing), processing4's `PShapeOBJ.java` (reference implementation for the internal children pattern)
+- Referenced [pr #6710](https://github.com/processing/p5.js/pull/6710) (original mtl implementation by **Diya** ([@diyaayay](https://github.com/diyaayay)) and **Dave** ([@davepagurek](https://github.com/davepagurek))), [issue #6924](https://github.com/processing/p5.js/issues/6924) (formal feature request tracking what is missing), processing4's `PShapeOBJ.java` (reference implementation for the internal children pattern)
 - Working poc built on dev-2.0 apis (`buildGeometry()`) before writing this proposal, not after
 - Direct conversations with **Diya** ([@diyaayay](https://github.com/diyaayay)), **Dave** ([@davepagurek](https://github.com/davepagurek)), and **Kit** ([@ksen0](https://github.com/ksen0)) that shaped the architecture documented in sections 5.1.3 and 3.3
 
@@ -843,7 +843,7 @@ Phases 3 and 4 carry the most risk because the vertex deduplication logic and th
 
 ## 4.3 Community feedback plan
 
-I will post two public community checkpoints during the coding period, both on the p5.js Discourse forum and the Discord server, and cross-link them on the relevant GitHub issue (#6924).
+I will post two public community checkpoints during the coding period, both on the p5.js Discourse forum and the Discord server, and cross-link them on the relevant GitHub issue ([#6924](https://github.com/processing/p5.js/issues/6924)).
 
 **Checkpoint 1: end of week 8 (after Phase 3):** I will post a runnable p5.js web editor sketch demonstrating the working slicer. Community members can fork the sketch and test it with their own models by swapping the geometry arrays. I will ask specifically: does your model produce the correct number of slices? Are any material boundaries merged incorrectly? Feedback collected here directly shapes Phase 6. Any model that fails to slice correctly becomes a fixture file. Any edge case I had not anticipated gets added to Phase 8's testing checklist. If the feedback reveals a structural problem in the slicer, Phase 4's 15h buffer absorbs the fix before renderer work begins.
 
@@ -884,18 +884,18 @@ Between checkpoints, I will stay active in the p5.js Discord #webgl channel and 
 
 ## 5.1 Background and what I already know
 
-### 5.1.1 The existing implementation (pr #6710, merged by **Diya** ([@diyaayay](https://github.com/diyaayay)) and **Dave** ([@davepagurek](https://github.com/davepagurek)))
+### 5.1.1 The existing implementation ([pr #6710](https://github.com/processing/p5.js/pull/6710), merged by **Diya** ([@diyaayay](https://github.com/diyaayay)) and **Dave** ([@davepagurek](https://github.com/davepagurek)))
 
-I read through the entire pr #6710 (.mtl color support, merged 2024) to understand where the current code sits:
+I read through the entire [pr #6710](https://github.com/processing/p5.js/pull/6710) (.mtl color support, merged 2024) to understand where the current code sits:
 
 - `parseMtl()` parses `Kd`, `Ka`, `Ks`, and `map_Kd` (texture path stored but never used)
 - `parseObj()` reads `usemtl` tokens and bakes the `Kd` diffuse colour into `model.vertexColors` as flat rgba values
 - The result is a single `p5.Geometry` with per-vertex colour but no texture, a lossy representation
 - `map_Ka`, `map_Ks`, `map_Bump`, `map_Ns`, `d`, `illum` are **silently ignored**
 
-Issue #6924 (filed by sableraf) formally tracks what's missing. This project resolves it completely.
+Issue [#6924](https://github.com/processing/p5.js/issues/6924) (filed by sableraf) formally tracks what's missing. This project resolves it completely.
 
-The collapsing approach introduced by #6710 had immediate side effects  - pr #6921 was filed and fixed within the same release cycle because vertex deduplication was destroying texture coordinates for models where vertices are shared across faces. Davepagurek's fix in pr #6923 explicitly documents how the single-array design makes per-material texture assignment structurally impossible. The architecture that caused #6921 is the same architecture this project replaces.
+The collapsing approach introduced by [#6710](https://github.com/processing/p5.js/pull/6710) had immediate side effects  - [pr #6921](https://github.com/processing/p5.js/pull/6921) was filed and fixed within the same release cycle because vertex deduplication was destroying texture coordinates for models where vertices are shared across faces. Davepagurek's fix in [pr #6923](https://github.com/processing/p5.js/pull/6923) explicitly documents how the single-array design makes per-material texture assignment structurally impossible. The architecture that caused [#6921](https://github.com/processing/p5.js/pull/6921) is the same architecture this project replaces.
 
 ### 5.1.2 What I found in the dev-2.0 codebase
 
@@ -923,7 +923,7 @@ The proposal you are reading is not the first version. It went through real iter
 
 When I first shared a prototype sketch with **Kit** ([@ksen0](https://github.com/ksen0)), she noticed it was running on p5.js 1.x. Her exact note was that `beginGeometry` and `endGeometry` do not exist in dev-2.0. I went back and read the dev-2.0 webgl source directly at `src/core/p5.Renderer3D.js`. That is where I found `buildGeometry(callback)` as the replacement. I rebuilt the entire poc from scratch using this api. That process is what revealed the full extent of what had changed in the 2.0 renderer and why the architecture needs to be designed specifically for it, not retrofitted from 1.x thinking. That same sketch also helped **Kit** ([@ksen0](https://github.com/ksen0)) identify a mistake in the new p5.js 2.0 reference, which she filed as issue #8631. It is a small thing, but it is a reminder that sharing early work in public spaces produces real signal even before a line of gsoc code is written.
 
-In 2022, **Diya** ([@diyaayay](https://github.com/diyaayay)) opened pr #7176, exploring this exact feature space with a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **Dave** ([@davepagurek](https://github.com/davepagurek)) noted: *"the direction is right but needs more design work."* that earlier exploration informed the architecture of this proposal directly. **Diya**'s choice to mentor this proposal reflects genuine continuity in the community's investment in this problem. And in issue #6670, **Dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is a direct response to that design question, which has remained open since 2022.
+In 2022, **Diya** ([@diyaayay](https://github.com/diyaayay)) opened [pr #7176](https://github.com/processing/p5.js/pull/7176), exploring this exact feature space with a `p5.Material` + `p5.Group` class hierarchy to decouple geometry from material state. **Dave** ([@davepagurek](https://github.com/davepagurek)) noted: *"the direction is right but needs more design work."* that earlier exploration informed the architecture of this proposal directly. **Diya**'s choice to mentor this proposal reflects genuine continuity in the community's investment in this problem. And in [issue #6670](https://github.com/processing/p5.js/issues/6670), **Dave** ([@davepagurek](https://github.com/davepagurek)) wrote in 2022: *"we'd need a new class containing multiple p5.Geometry objects with material settings for each."* `_materialSlices` is a direct response to that design question, which has remained open since 2022.
 
 When I asked **Diya** ([@diyaayay](https://github.com/diyaayay)) about the approach for this proposal, she pushed back on any design that would expose a new public class. Her feedback was clear: keep the grouping logic inside the existing pipeline, avoid anything that looks like a breaking change. That is what killed option a (new `p5.GeometryGroup` class) and sent me toward `_materialSlices` as a private field.
 
