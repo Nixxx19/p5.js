@@ -327,21 +327,8 @@ on end-of-file:
   7. If more than 1 slices, attach array as parent._materialSlices
 ```
 
-```mermaid
-flowchart TD
-    A([.obj file]) --> B[Read next line]
-    B --> C{Token?}
-    C -->|v / vn / vt| D[Add to current slice\nvertex pool]
-    C -->|usemtl name| E[Close current slice\nOpen new slice for name\nLook up materialProfile]
-    C -->|f face indices| F[Resolve global indices\nto slice-local indices\nAdd face to current slice]
-    C -->|end of file| G[Finalise last open slice]
-    D --> B
-    E --> B
-    F --> B
-    G --> H{How many slices?}
-    H -->|1 slice| I([Use existing single-draw path\nzero regression])
-    H -->|N slices| J([Attach as _materialSlices\non parent p5.Geometry])
-```
+<img width="993" height="647" alt="Screenshot 2026-03-30 at 8 47 41 AM" src="https://github.com/user-attachments/assets/3b9e62da-276a-4c2c-bc84-4caa0f632d19" />
+
 
 The vertex-deduplication logic (`usedVerts` map, keyed by `vertexString + material`) already exists in the current code. The slicer reuses this: each slice has its own `usedVerts` scope so face indices are local to the slice.
 
