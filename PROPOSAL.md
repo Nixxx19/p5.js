@@ -722,8 +722,6 @@ P5.js's mission is access and inclusion. **Kit** ([@ksen0](https://github.com/ks
 
 Sketchfab is the world's largest free 3d asset library. It has millions of downloadable models spanning art, culture, science, education, and games. The majority of those models are exported as obj plus mtl, the most common interchange format. Every single one of those models has multiple materials. And every single one of them renders as a flat grey blob in p5.js today. The same is true for any model exported from blender, maya, or tinkercad - the obj/mtl format is universal across all 3d tools and p5.js breaks all of them the same way.
 
-The problem is made worse by how it fails. `loadModel()` returns successfully with no error and no warning. The user did everything right. **the failure is completely silent**.
-
 Who exactly gets blocked by this today:
 
 **students in 3d and animation courses.** this is my own situation. I take an elective where we model, rig, and texture characters in blender and then bring them into creative coding environments. Every student in that class who tries to use p5.js hits the same wall. The character they spent hours texturing comes out grey and flat. P5.js is supposed to be the gentle on-ramp to creative coding. Right now it is a dead end for anyone coming from a 3d background.
@@ -853,10 +851,6 @@ Between checkpoints, I will stay active in the p5.js Discord #webgl channel and 
 | 20 | Phase 8 | Performance benchmark complete (12-slice model across Chrome, Firefox, Safari), 5 follow-up GitHub issues filed with full context | Final PR polished and code review feedback addressed |
 | 21-22 | Overflow | Absorb any slippage from earlier phases without risk to final deliverables | If on schedule: better error messages for missing `map_Kd`, additional real-model fixtures, or PBR property stubs on `materialProfile` |
 
-Weeks 21 and 22 are the final two weeks of the 22-week GSoC window. No new work is scheduled here. If a phase earlier in the timeline ran longer than expected, these weeks absorb that slip without any risk to the final deliverables. If all phases finished on time, these weeks become stretch goal time for features that are out of scope for v1 but worth filing as follow-up issues.
-
-
-
 ***
 
 # Section 5: Research
@@ -913,8 +907,6 @@ When I asked **Diya** ([@diyaayay](https://github.com/diyaayay)) about the appro
 
 **Connie** ([@khanniie](https://github.com/khanniie)) mentioned that the strongest proposals have three things: personal enthusiasm for the subject matter, a poc with real code, and evidence of previous contributions. That framing helped me make sure all three are visible in this proposal.
 
-Beyond the mentors, the community has independently reported this same failure repeatedly. Issue #7346 (obj models not displaying materials even when `normalMaterial()` is called explicitly) and issue #4032 (`texture()` not working for loaded model objects) are both filed by regular p5.js users who hit the wall without knowing why. This proposal addresses the root cause that both of those issues trace back to: the obj parser discards material boundaries before the renderer ever sees them. **the fact that unrelated users filed the same bug independently, years apart, is the clearest possible signal that the fix belongs in the core library**.
-
 ### 5.1.4 Previous attempts and why they stalled
 
 This is not a new problem, and this proposal builds on prior exploration. Three contributors investigated this before and each identified the right problem area. Each attempt contributed to the understanding of what a complete architecture needs to look like. `_materialSlices` is an attempt to answer the design question that each of those efforts raised.
@@ -929,7 +921,7 @@ The common thread: every attempt ran into the same design question **Dave** name
 
 ### 5.1.5 My existing contribution
 
-I have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. The `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. I found this bug while reading `parseObj()` specifically to understand the code I would be working on for this project. It was not a separate investigation, it came directly out of the deep read I did for the proposal. This is also why I know exactly where the slicer needs to be inserted in that function.
+I have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. I found it while doing the deep source read for this proposal, not as a separate investigation. That same read is why I know exactly where the slicer needs to be inserted in that function.
 
 ## 5.2 User research
 
