@@ -6,7 +6,7 @@
 
 <br><br>
 
-<img src="https://processingfoundation.org/wp-content/uploads/2021/10/PF_Logo_Dark.png" width="200" alt="Processing Foundation" />
+<img src="https://avatars.githubusercontent.com/u/1617169?v=4" width="160" alt="Processing Foundation" />
 
 <br><br><br>
 
