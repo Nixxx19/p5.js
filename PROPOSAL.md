@@ -353,6 +353,8 @@ on end-of-file:
   7. If more than 1 slices, attach array as parent._materialSlices
 ```
 
+The flowchart below visualises this pass, showing how each token type routes through the slicer and how the single-draw fallback is preserved when only one material group is found:
+
 <img width="993" height="647" alt="Screenshot 2026-03-30 at 8 47 41 AM" src="https://github.com/user-attachments/assets/3b9e62da-276a-4c2c-bc84-4caa0f632d19" />
 
 
