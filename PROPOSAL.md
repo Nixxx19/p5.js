@@ -1,14 +1,38 @@
-# GSoC 2026 proposal
-## Full texture support for .mtl files in p5.js
-**applicant:** **Nityam** ([@Nixxx19](https://github.com/Nixxx19))
+<div align="center">
 
-**project size:** 300 hours
+<br><br><br><br>
 
-**mentors:** **Diya Solanki** ([@diyaayay](https://github.com/diyaayay)) & **Claudine Chen** ([@mingness](https://github.com/mingness))
+<img src="https://developers.google.com/open-source/gsoc/resources/downloads/GSoC-icon-192.png" width="160" alt="Google Summer of Code" />
 
+<br><br>
 
+<img src="https://processingfoundation.org/wp-content/uploads/2021/10/PF_Logo_Dark.png" width="200" alt="Processing Foundation" />
 
-***
+<br><br><br>
+
+# Google Summer of Code 2026
+
+## Full Texture Support for .mtl Files in p5.js
+
+<br>
+
+**Applicant:** Nityam ([@Nixxx19](https://github.com/Nixxx19))
+
+**Project:** Full texture support for .mtl files in p5.js
+
+**Project size:** 300 hours
+
+**Mentors:** Diya Solanki ([@diyaayay](https://github.com/diyaayay)) & Claudine Chen ([@mingness](https://github.com/mingness))
+
+**Organization:** Processing Foundation
+
+<br><br><br><br>
+
+</div>
+
+<div style="page-break-after: always;"></div>
+
+---
 
 # Section 1: Introduction
 
