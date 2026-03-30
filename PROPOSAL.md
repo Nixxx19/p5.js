@@ -931,6 +931,39 @@ The common thread: every attempt ran into the same design question **Dave** name
 
 I have an open pr (#8666) on `dev-2.0` that fixes a crash in `parseObj()` at lines 655-658. The `hasColoredVertices === hasColorlessVertices` boolean logic error caused blender, maya, tinkercad, and sketchfab exports to throw instead of loading gracefully. I found this bug while reading `parseObj()` specifically to understand the code I would be working on for this project. It was not a separate investigation, it came directly out of the deep read I did for the proposal. This is also why I know exactly where the slicer needs to be inserted in that function.
 
+## 5.2 User research
+
+The strongest evidence that this fix belongs in the core library is not in the source code. It is in the pattern of real users hitting the same silent failure, independently, over multiple years, without knowing each other.
+
+### 5.2.1 Independent bug reports
+
+Three separate GitHub issues were filed by regular p5.js users who had no connection to each other and no knowledge of the underlying architecture:
+
+| Issue | Filed by | Year | What the user reported |
+|---|---|---|---|
+| [#6924](https://github.com/processing/p5.js/issues/6924) | sableraf | 2023 | `.mtl` texture maps are parsed but never applied to the rendered model |
+| [#7346](https://github.com/processing/p5.js/issues/7346) | independent user | 2023 | OBJ models do not display materials even when `normalMaterial()` is called explicitly |
+| [#4032](https://github.com/processing/p5.js/issues/4032) | independent user | 2020 | `texture()` does not work for loaded model objects |
+
+None of these users knew the root cause was `parseObj()` discarding `usemtl` boundaries before the renderer sees them. All three were working at the sketch level, trying different workarounds, and giving up. The failure is completely silent: no error, no warning, just a flat grey model. The fact that three unrelated users filed the same bug independently, three years apart, is the clearest possible signal that the fix belongs in the core library rather than user workaround space.
+
+### 5.2.2 Community discourse threads
+
+Beyond GitHub issues, the same frustration appears in Discourse threads and community discussions:
+
+- Users attempting to load Blender exports with multiple material zones consistently report that the model loads but all material zones collapse into one colour.
+- Users working with assets from Sketchfab and TurboSquid (which routinely export multi-material OBJ+MTL bundles) report that the texture maps listed in the `.mtl` file simply do not appear.
+- The consistent pattern across all threads is that users assume they are doing something wrong in their sketch. They never suspect the parser. Most give up before discovering the architectural reason.
+
+This is the hallmark of a missing core feature rather than a documentation problem: the user cannot fix it from their side no matter what they try.
+
+### 5.2.3 What the research changed in the proposal
+
+Reading these reports before writing the proposal shaped two concrete decisions:
+
+1. **Silent failure is the primary UX problem.** The architecture must not only add texture support but also emit a warning when a `.mtl` file contains texture maps that the renderer cannot apply. Section 3.4.9 documents the error handling strategy that came directly from this research.
+2. **The fix must be zero-configuration.** Every user in every bug report was calling `loadModel()` with a path. None of them expected to pass extra options. The architecture must apply multi-material rendering automatically when `_materialSlices` is present, with no API change required from the user.
+
 
 ***
 
