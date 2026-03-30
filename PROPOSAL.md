@@ -2,11 +2,7 @@
 
 <br><br><br><br>
 
-<img src="https://developers.google.com/open-source/gsoc/resources/downloads/GSoC-icon-192.png" width="160" alt="Google Summer of Code" />
-
-<br><br>
-
-<img src="https://avatars.githubusercontent.com/u/1617169?v=4" width="160" alt="Processing Foundation" />
+<img src="https://developers.google.com/open-source/gsoc/resources/downloads/GSoC-icon-192.png" width="130" alt="Google Summer of Code" /> &nbsp;&nbsp; × &nbsp;&nbsp; <img src="https://avatars.githubusercontent.com/u/1617169?v=4" width="130" alt="Processing Foundation" />
 
 <br><br><br>
 
