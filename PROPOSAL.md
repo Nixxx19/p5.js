@@ -942,8 +942,8 @@ Three separate GitHub issues were filed by regular p5.js users who had no connec
 | Issue | Filed by | Year | What the user reported |
 |---|---|---|---|
 | [#6924](https://github.com/processing/p5.js/issues/6924) | sableraf | 2023 | `.mtl` texture maps are parsed but never applied to the rendered model |
-| [#7346](https://github.com/processing/p5.js/issues/7346) | independent user | 2023 | OBJ models do not display materials even when `normalMaterial()` is called explicitly |
-| [#4032](https://github.com/processing/p5.js/issues/4032) | independent user | 2020 | `texture()` does not work for loaded model objects |
+| [#7346](https://github.com/processing/p5.js/issues/7346) | bsack23 | 2023 | OBJ models do not display materials even when `normalMaterial()` is called explicitly |
+| [#4032](https://github.com/processing/p5.js/issues/4032) | ffd8 | 2020 | `texture()` does not work for loaded model objects |
 
 None of these users knew the root cause was `parseObj()` discarding `usemtl` boundaries before the renderer sees them. All three were working at the sketch level, trying different workarounds, and giving up. The failure is completely silent: no error, no warning, just a flat grey model. The fact that three unrelated users filed the same bug independently, three years apart, is the clearest possible signal that the fix belongs in the core library rather than user workaround space.
 
