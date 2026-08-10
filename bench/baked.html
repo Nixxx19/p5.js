@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>tangent bench: baked</title>
+<script src="./p5.baked.min.js" charset="utf-8"></script>
+<style>body{margin:0;background:#111;color:#eee;font:14px/1.4 monospace}
+#hud{position:fixed;top:10px;left:10px;background:rgba(0,0,0,.6);padding:8px 12px;border-radius:6px}
+#fps{font-size:22px;font-weight:bold}</style>
+</head>
+<body>
+<div id="hud"><div>baked tangents (per-vertex tangent data)</div><div id="fps">loading model...</div></div>
+<script>
+let sphereModel, fps = 0;
+async function setup() {
+  createCanvas(1000, 1000, WEBGL);
+  pixelDensity(1);
+  sphereModel = await loadModel('bump_sphere.obj', true);
+}
+function draw() {
+  if (!sphereModel) return;
+  background(20);
+  ambientLight(40);
+  pointLight(255, 255, 255, 0, 0, 500);
+  directionalLight(180, 180, 200, 0.4, 0.5, -1);
+  noStroke(); fill(200);
+  rotateY(frameCount * 0.01);
+  const N = 11, gap = 150, s = 95;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    push();
+    translate((i-(N-1)/2)*gap, (j-(N-1)/2)*gap, 0);
+    rotateX(frameCount*0.01 + i);
+    rotateY(frameCount*0.013 + j);
+    scale(s);
+    model(sphereModel);
+    pop();
+  }
+  // smoothed fps readout
+  fps = frameCount < 3 ? frameRate() : fps * 0.95 + frameRate() * 0.05;
+  document.getElementById('fps').textContent = fps.toFixed(0) + ' fps';
+}
+</script>
+</body>
+</html>
