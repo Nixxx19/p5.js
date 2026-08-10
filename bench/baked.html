@@ -23,11 +23,14 @@ function draw() {
   const cnv = document.querySelector('canvas');
   if (!gl) gl = cnv.getContext('webgl2') || cnv.getContext('webgl');
   const t0 = performance.now();
-  background(20);
-  ambientLight(55);
-  pointLight(255, 255, 255, 0, 0, 600);
-  directionalLight(150, 150, 170, 0.3, 0.4, -1);
-  noStroke(); fill(210);
+  background(12, 14, 22);
+  ambientLight(38, 40, 55);
+  pointLight(255, 190, 140, -350, -260, 450); // warm key, upper left
+  pointLight(120, 170, 255, 360, 260, 260);   // cool rim, lower right
+  noStroke();
+  fill(228, 220, 210);
+  specularMaterial(255);
+  shininess(90);
   // fixed grid facing the camera; each sphere spins in place so the bump
   // detail animates but nothing swings toward the camera. big overlapping
   // spheres keep it fragment heavy so it's gpu bound (where the tangent cost shows).
