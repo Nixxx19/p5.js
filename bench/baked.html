@@ -12,32 +12,42 @@
 <div id="hud"><div>baked tangents (per-vertex tangent data)</div><div id="fps">loading model...</div></div>
 <script>
 const MODEL = 'https://cdn.jsdelivr.net/gh/Nixxx19/p5.js@2b38a87/bench/bump_sphere.obj';
-let sphereModel, fps = 0;
+let sphereModel, gl, frameMs = 0;
 async function setup() {
   createCanvas(1000, 1000, WEBGL);
   pixelDensity(1);
-  sphereModel = await loadModel(MODEL, true);
+  sphereModel = await loadModel(MODEL); // obj is already unit sized (±1)
 }
 function draw() {
   if (!sphereModel) return;
+  const cnv = document.querySelector('canvas');
+  if (!gl) gl = cnv.getContext('webgl2') || cnv.getContext('webgl');
+  const t0 = performance.now();
   background(20);
-  ambientLight(40);
-  pointLight(255, 255, 255, 0, 0, 500);
-  directionalLight(180, 180, 200, 0.4, 0.5, -1);
-  noStroke(); fill(200);
-  rotateY(frameCount * 0.01);
-  const N = 11, gap = 150, s = 95;
+  ambientLight(55);
+  pointLight(255, 255, 255, 0, 0, 600);
+  directionalLight(150, 150, 170, 0.3, 0.4, -1);
+  noStroke(); fill(210);
+  // fixed grid facing the camera; each sphere spins in place so the bump
+  // detail animates but nothing swings toward the camera. big overlapping
+  // spheres keep it fragment heavy so it's gpu bound (where the tangent cost shows).
+  const N = 13, gap = 74, s = 62;
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
     push();
     translate((i-(N-1)/2)*gap, (j-(N-1)/2)*gap, 0);
-    rotateX(frameCount*0.01 + i);
-    rotateY(frameCount*0.013 + j);
+    rotateX(frameCount*0.012 + i);
+    rotateY(frameCount*0.015 + j);
     scale(s);
     model(sphereModel);
     pop();
   }
-  fps = frameCount < 3 ? frameRate() : fps * 0.95 + frameRate() * 0.05;
-  document.getElementById('fps').textContent = fps.toFixed(0) + ' fps';
+  // force the gpu to finish so we time real render cost, not vsync wait.
+  // this is the number to compare between the two pages (lower = faster).
+  gl.finish();
+  const dt = performance.now() - t0;
+  frameMs = frameMs ? frameMs * 0.9 + dt * 0.1 : dt;
+  document.getElementById('fps').textContent =
+    frameMs.toFixed(1) + ' ms/frame  (' + (1000 / frameMs).toFixed(0) + ' fps uncapped)';
 }
 </script>
 </body>
