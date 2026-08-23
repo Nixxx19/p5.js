@@ -1,0 +1,58 @@
+# every material below exercises a different part of the mtl spec
+
+# 1. map_Kd only, the one p5 already supported
+newmtl tiles
+Ka 0.10 0.13 0.16
+Kd 1.000 1.000 1.000
+Ks 0.16 0.16 0.16
+Ns 22
+map_Kd kd_tiles.png
+
+# 2. map_Ks, only the scratches are glossy
+newmtl scratched
+Ka 0.06 0.06 0.07
+Kd 1.000 1.000 1.000
+Ks 1.000 1.000 1.000
+Ns 85
+map_Kd ks_base.png
+map_Ks ks_spec.png
+
+# 3. map_Ka, ambient response varies across the surface
+newmtl ambient
+Kd 0.055 0.060 0.075
+Ks 0.10 0.10 0.10
+Ns 18
+map_Ka ka_grad.png
+
+# 4. map_Ns, highlight tightness varies across the surface
+newmtl checkershine
+Ka 0.10 0.10 0.12
+Kd 0.470 0.510 0.600
+Ks 1.000 1.000 1.000
+Ns 150
+map_Ns ns_check.png
+
+# 5. map_Bump with -bm, brightness is height
+newmtl brick
+Ka 0.12 0.08 0.06
+Kd 1.000 1.000 1.000
+Ks 0.18 0.15 0.13
+Ns 26
+map_Kd bump_brick_kd.png
+map_Bump -bm 2.6 bump_brick.png
+
+# 6. norm, an actual tangent-space normal map
+newmtl dimpled
+Ka 0.10 0.10 0.13
+Kd 1.000 1.000 1.000
+Ks 0.85 0.85 0.95
+Ns 90
+map_Kd norm_dimple_kd.png
+norm norm_dimple.png
+
+# 7. no textures at all, just colour and shininess
+newmtl plainbrass
+Ka 0.16 0.12 0.03
+Kd 0.847 0.667 0.271
+Ks 1.000 0.910 0.600
+Ns 190
