@@ -1,0 +1,53 @@
+# male02 from the three.js examples, retextured so every map type the .mtl format defines is in use
+
+# hair: colour, specular sheen and a tangent-space normal map from the strands
+newmtl _01_-_Default1noCulli__01_-_Default1noCulli
+Ka 0.30 0.30 0.30
+Kd 1.000 1.000 1.000
+Ks 0.90 0.80 0.70
+Ns 110
+map_Kd hair_kd.png
+map_Ks hair_ks.png
+norm hair_norm.png
+
+# suit, shirt, hands and shoes: colour, specular, shininess, ambient and bump maps
+newmtl FrontColorNoCullingID_male-02-1noCulling.JP
+Ka 0.55 0.55 0.55
+Kd 1.000 1.000 1.000
+Ks 1.000 1.000 1.000
+Ns 140
+map_Kd body_kd.png
+map_Ka body_ka.png
+map_Ks body_ks.png
+map_Ns body_ns.png
+map_Bump -bm 0.8 body_bump.png
+
+newmtl male-02-1noCullingID_male-02-1noCulling.JP
+Ka 0.55 0.55 0.55
+Kd 1.000 1.000 1.000
+Ks 1.000 1.000 1.000
+Ns 140
+map_Kd body_kd.png
+map_Ka body_ka.png
+map_Ks body_ks.png
+map_Ns body_ns.png
+map_Bump -bm 0.8 body_bump.png
+
+# face: colour, a soft specular map and fine bump detail
+newmtl FrontColorNoCullingID_orig_02_-_Defaul1noCu
+Ka 0.45 0.45 0.45
+Kd 1.000 1.000 1.000
+Ks 0.60 0.55 0.50
+Ns 30
+map_Kd head_kd.png
+map_Ks head_ks.png
+map_Bump -bm 0.5 head_bump.png
+
+newmtl orig_02_-_Defaul1noCu_orig_02_-_Defaul1noCu
+Ka 0.45 0.45 0.45
+Kd 1.000 1.000 1.000
+Ks 0.60 0.55 0.50
+Ns 30
+map_Kd head_kd.png
+map_Ks head_ks.png
+map_Bump -bm 0.5 head_bump.png
